@@ -16,6 +16,7 @@ func Seed(db *gorm.DB) {
 	seedUser(db, "Sample Candidate", "candidate@example.com", env("CANDIDATE_PASSWORD", "Candidate@123"), models.RoleCandidate)
 	seedQuestions(db)
 	seedAssessments(db)
+	seedCodingAssessment(db)
 }
 
 func env(key, fallback string) string {
@@ -83,4 +84,27 @@ func seedAssessments(db *gorm.DB) {
 		log.Fatalf("seed: assessments failed: %v", err)
 	}
 	log.Println("seeded 2 assessments")
+}
+func seedCodingAssessment(db *gorm.DB) {
+	var count int64
+	db.Model(&models.Assessment{}).Where("assessment_type = ?", "CODING").Count(&count)
+
+	if count > 0 {
+		return
+	}
+
+	a := models.Assessment{
+		Title:           "DSA Coding Challenge",
+		AssessmentType:  "CODING",
+		Active:          true,
+		Description:     "10 randomly chosen classic DSA problems. Solve in C++, Java or Python with progressive hints.",
+		TotalQuestions:  10,
+		DurationMinutes: 90,
+	}
+
+	if err := db.Create(&a).Error; err != nil {
+		log.Fatalf("seed: coding assessment failed: %v", err)
+	}
+
+	log.Println("seeded coding assessment")
 }

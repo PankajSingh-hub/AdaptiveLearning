@@ -15,7 +15,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import QuestionBank from "./pages/QuestionBank";
 import AssessmentManagement from "./pages/AssessmentManagement";
 import CandidateList from "./pages/CandidateList";
-
+import CodingSession from "./pages/CodingSession";
+import CodingResult from "./pages/CodingResult";
 function Home() {
   const { user } = useAuth();
   return <Navigate to={homeFor(user.role)} replace />;
@@ -40,6 +41,10 @@ export default function App() {
               path="/interview/:id"
               element={only("CANDIDATE", <InterviewSession />)}
             />
+            <Route
+              path="/coding/:id"
+              element={only("CANDIDATE", <CodingSession />)}
+            />
 
             <Route
               element={
@@ -50,6 +55,10 @@ export default function App() {
             >
               <Route path="/" element={<Home />} />
               <Route path="/report/:id" element={<InterviewReport />} />
+              <Route
+                path="/coding/:id/result"
+                element={only("CANDIDATE", <CodingResult />)}
+              />
               <Route
                 path="/dashboard"
                 element={only("CANDIDATE", <CandidateDashboard />)}

@@ -3,8 +3,9 @@ package main
 import (
 	"log"
 	"time"
-
 	"adaptive-assessment/internal/apidocs"
+	"adaptive-assessment/internal/coding"
+
 	"adaptive-assessment/internal/config"
 	"adaptive-assessment/internal/database"
 	"adaptive-assessment/internal/handler"
@@ -28,6 +29,7 @@ func main() {
 	assessmentSvc := service.NewAssessmentService(db)
 	analyticsSvc := service.NewAnalyticsService(db, reportSvc)
 	candidateSvc := service.NewCandidateService(db, reportSvc)
+	codingSvc := service.NewCodingService(db, coding.NewLocalExecutor(2))
 
 	authH := handler.NewAuthHandler(authSvc)
 	interviewH := handler.NewInterviewHandler(interviewSvc)
@@ -36,7 +38,7 @@ func main() {
 	reportH := handler.NewReportHandler(reportSvc)
 	analyticsH := handler.NewAnalyticsHandler(analyticsSvc)
 	candidateH := handler.NewCandidateHandler(candidateSvc)
-
+codingH := handler.NewCodingHandler(codingSvc)
 		r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{cfg.AllowedOrigin},
@@ -67,6 +69,15 @@ func main() {
 	candidate.GET("/:id", interviewH.Get)
 	candidate.POST("/:id/answer", interviewH.Answer)
 	candidate.POST("/:id/finish", interviewH.Finish)
+	cod := protected.Group("/coding", middleware.RequireRole(string(models.RoleCandidate)))
+
+cod.GET("/languages", codingH.Languages)
+cod.POST("/start", codingH.Start)
+cod.GET("/sessions/:id", codingH.Session)
+cod.GET("/sessions/:id/problems/:order", codingH.Problem)
+cod.POST("/sessions/:id/problems/:order/run", codingH.Run)
+cod.POST("/sessions/:id/problems/:order/submit", codingH.Submit)
+cod.POST("/sessions/:id/finish", codingH.Finish)
 
 	admin := protected.Group("", middleware.RequireRole(string(models.RoleAdmin)))
 	admin.GET("/questions", questionH.List)

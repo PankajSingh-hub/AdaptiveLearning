@@ -23,7 +23,7 @@ func NewInterviewService(db *gorm.DB, e *AdaptiveEngine, r *ReportService) *Inte
 
 func (s *InterviewService) Start(candidateID, assessmentID uint) (*dto.StartResponse, error) {
 	var a models.Assessment
-	if err := s.db.Where("id = ? AND active = ?", assessmentID, true).First(&a).Error; err != nil {
+	if err := s.db.Where("id = ? AND active = ? AND assessment_type = ?", assessmentID, true, "MCQ").First(&a).Error; err != nil {
 		return nil, NotFound("assessment not found")
 	}
 	now := time.Now()

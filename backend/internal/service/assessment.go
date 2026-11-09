@@ -77,9 +77,10 @@ func (s *AssessmentService) Delete(id uint) (deactivated bool, err error) {
 	if err := s.db.First(&a, id).Error; err != nil {
 		return false, NotFound("assessment not found")
 	}
-	var used int64
+		var used, usedCoding int64
 	s.db.Model(&models.InterviewSession{}).Where("assessment_id = ?", id).Count(&used)
-	if used > 0 {
+	s.db.Model(&models.CodingSession{}).Where("assessment_id = ?", id).Count(&usedCoding)
+	if used > 0 || usedCoding > 0 {
 		return true, s.db.Model(&a).Update("active", false).Error
 	}
 	return false, s.db.Delete(&a).Error
@@ -87,8 +88,10 @@ func (s *AssessmentService) Delete(id uint) (deactivated bool, err error) {
 
 func toAssessmentDTO(a models.Assessment) dto.AssessmentDTO {
 	return dto.AssessmentDTO{
-		ID: a.ID, Title: a.Title, Description: a.Description, TotalQuestions: a.TotalQuestions,
-		DurationMinutes: a.DurationMinutes, ShowExplanations: a.ShowExplanations,
-		Active: a.Active, CreatedAt: a.CreatedAt,
-	}
+    ID: a.ID, Title: a.Title, Description: a.Description,
+    Type: a.AssessmentType,
+    TotalQuestions: a.TotalQuestions,
+    DurationMinutes: a.DurationMinutes, ShowExplanations: a.ShowExplanations,
+    Active: a.Active, CreatedAt: a.CreatedAt,
+}
 }

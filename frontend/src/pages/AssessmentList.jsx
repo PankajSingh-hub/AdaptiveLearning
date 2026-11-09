@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, ListChecks, Play } from "lucide-react";
+import { Clock, Code2, ListChecks, Play } from "lucide-react";
 import useFetch from "../hooks/useFetch";
-import { listAssessments, startInterview } from "../services/candidateService";
+import {
+  listAssessments,
+  startCoding,
+  startInterview,
+} from "../services/candidateService";
 import { errMsg } from "../services/api";
 import { useToast } from "../context/ToastContext";
 import { Badge, Empty, ErrorMessage, PageLoader } from "../components/ui";
@@ -16,12 +20,17 @@ export default function AssessmentList() {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const start = async (id) => {
+  const start = async (a) => {
     if (startingId) return;
-    setStartingId(id);
+    setStartingId(a.id);
     try {
-      const res = await startInterview(id);
-      navigate(`/interview/${res.sessionId}`);
+      if (a.type === "CODING") {
+        const res = await startCoding(a.id);
+        navigate(`/coding/${res.sessionId}`);
+      } else {
+        const res = await startInterview(a.id);
+        navigate(`/interview/${res.sessionId}`);
+      }
     } catch (e) {
       toast.error(errMsg(e));
       setStartingId(null);
@@ -36,7 +45,10 @@ export default function AssessmentList() {
       <div className="page-head">
         <div>
           <h1>Assessments</h1>
-          <p className="muted">Difficulty adapts to your answers as you go.</p>
+          <p className="muted">
+            Quizzes adapt to your answers; coding challenges give progressive
+            hints.
+          </p>
         </div>
       </div>
       {data.length === 0 ? (
@@ -48,32 +60,54 @@ export default function AssessmentList() {
         </div>
       ) : (
         <div className="grid two">
-          {data.map((a) => (
-            <div key={a.id} className="card hover">
-              <h2>{a.title}</h2>
-              <p className="muted" style={{ minHeight: 44 }}>
-                {a.description}
-              </p>
-              <div className="chips" style={{ margin: "14px 0 18px" }}>
-                <Badge>
-                  <ListChecks size={12} style={{ verticalAlign: -2 }} />{" "}
-                  {a.totalQuestions} questions
-                </Badge>
-                <Badge>
-                  <Clock size={12} style={{ verticalAlign: -2 }} />{" "}
-                  {a.durationMinutes} min
-                </Badge>
+          {data.map((a) => {
+            const coding = a.type === "CODING";
+            return (
+              <div key={a.id} className="card hover">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <h2>{a.title}</h2>
+                  <Badge tone={coding ? "accent" : ""}>
+                    {coding ? "Coding" : "Quiz"}
+                  </Badge>
+                </div>
+                <p className="muted" style={{ minHeight: 44 }}>
+                  {a.description}
+                </p>
+                <div className="chips" style={{ margin: "14px 0 18px" }}>
+                  <Badge>
+                    {coding ? (
+                      <Code2 size={12} style={{ verticalAlign: -2 }} />
+                    ) : (
+                      <ListChecks size={12} style={{ verticalAlign: -2 }} />
+                    )}{" "}
+                    {a.totalQuestions} {coding ? "problems" : "questions"}
+                  </Badge>
+                  <Badge>
+                    <Clock size={12} style={{ verticalAlign: -2 }} />{" "}
+                    {a.durationMinutes} min
+                  </Badge>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  disabled={startingId !== null}
+                  onClick={() => start(a)}
+                >
+                  <Play size={16} />
+                  {startingId === a.id
+                    ? "Starting..."
+                    : coding
+                      ? "Start challenge"
+                      : "Start interview"}
+                </button>
               </div>
-              <button
-                className="btn btn-primary"
-                disabled={startingId !== null}
-                onClick={() => start(a.id)}
-              >
-                <Play size={16} />
-                {startingId === a.id ? "Starting..." : "Start interview"}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>

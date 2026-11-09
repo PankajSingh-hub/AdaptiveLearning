@@ -65,6 +65,7 @@ type Assessment struct {
 	DurationMinutes  int
 	ShowExplanations bool
 	Active           bool
+	AssessmentType   string `gorm:"default:MCQ"`
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }

@@ -13,3 +13,26 @@ export const listReports = (page = 0, size = 8) =>
 export const getReport = (id) => unwrap(api.get(`/reports/${id}`));
 export const candidateAnalytics = (id) =>
   unwrap(api.get(`/analytics/candidate/${id}`));
+
+export const startCoding = (assessmentId) =>
+  unwrap(api.post("/coding/start", { assessmentId }));
+export const getCodingSession = (id) =>
+  unwrap(api.get(`/coding/sessions/${id}`));
+export const getCodingProblem = (id, order) =>
+  unwrap(api.get(`/coding/sessions/${id}/problems/${order}`));
+export const runCode = (id, order, language, code) =>
+  unwrap(
+    api.post(`/coding/sessions/${id}/problems/${order}/run`, {
+      language,
+      code,
+    }),
+  );
+export const submitCode = (id, order, language, code) =>
+  unwrap(
+    api.post(`/coding/sessions/${id}/problems/${order}/submit`, {
+      language,
+      code,
+    }),
+  );
+export const finishCoding = (id) =>
+  unwrap(api.post(`/coding/sessions/${id}/finish`));

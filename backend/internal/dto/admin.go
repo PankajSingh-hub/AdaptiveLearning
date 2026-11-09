@@ -64,5 +64,6 @@ type AssessmentDTO struct {
 	DurationMinutes  int       `json:"durationMinutes"`
 	ShowExplanations bool      `json:"showExplanations"`
 	Active           bool      `json:"active"`
+		Type             string    `json:"type"`
 	CreatedAt        time.Time `json:"createdAt"`
 }

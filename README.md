@@ -61,12 +61,6 @@ cd frontend && cp .env.example .env && npm install && npm run dev   # http://loc
 Or with Docker: `cp .env.example .env && docker compose up --build`.
 Full instructions: [docs/setup.md](docs/setup.md).
 
-## Demo accounts (seeded on first start)
-
-| Role      | Email                 | Password      |
-| --------- | --------------------- | ------------- |
-| Admin     | admin@example.com     | Admin@12345   |
-| Candidate | candidate@example.com | Candidate@123 |
 
 These are for local demos only. Set `ADMIN_PASSWORD` / `CANDIDATE_PASSWORD` to override them before the first run.
 

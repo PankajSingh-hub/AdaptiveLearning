@@ -1,0 +1,403 @@
+openapi: 3.0.3
+info:
+  title: AdaptIQ Adaptive Assessment API
+  version: 1.0.0
+  description: |
+    All responses use the envelope `{ success, message, data }`.
+    To try protected endpoints: call **POST /auth/login**, copy `data.token`, click **Authorize**, paste the token.
+servers:
+  - url: /api
+tags:
+  - name: Authentication
+  - name: Questions
+  - name: Assessments
+  - name: Interviews
+  - name: Reports
+  - name: Analytics
+  - name: Candidates
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: integer } }
+    Page: { name: page, in: query, schema: { type: integer, default: 0 } }
+    Size:
+      {
+        name: size,
+        in: query,
+        schema: { type: integer, default: 10, maximum: 100 },
+      }
+  responses:
+    Ok:
+      description: Success envelope
+      content:
+        {
+          application/json:
+            { schema: { $ref: "#/components/schemas/Envelope" } },
+        }
+    BadRequest:
+      description: Validation or business-rule error (400)
+      content:
+        { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    Unauthorized:
+      description: Missing, invalid or expired token (401)
+      content:
+        { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    Forbidden:
+      description: Role or ownership check failed (403)
+      content:
+        { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    NotFound:
+      description: Resource not found (404)
+      content:
+        { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data: { type: object }
+    Error:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+        timestamp: { type: string, format: date-time }
+        path: { type: string }
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 72 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    QuestionRequest:
+      type: object
+      required: [text, topic, category, difficulty, options]
+      properties:
+        text: { type: string, minLength: 10 }
+        topic: { type: string }
+        category:
+          {
+            type: string,
+            enum:
+              [
+                DSA,
+                Java,
+                OOP,
+                DBMS,
+                OS,
+                Computer Networks,
+                System Design,
+                SQL,
+                Programming,
+              ],
+          }
+        difficulty: { type: string, enum: [EASY, MEDIUM, HARD] }
+        explanation: { type: string }
+        timeLimitSec: { type: integer, minimum: 10, maximum: 600 }
+        active: { type: boolean }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 6
+          description: Exactly one option must have correct=true.
+          items:
+            type: object
+            required: [text]
+            properties:
+              text: { type: string }
+              correct: { type: boolean }
+    AssessmentRequest:
+      type: object
+      required: [title, totalQuestions, durationMinutes]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 150 }
+        description: { type: string, maxLength: 500 }
+        totalQuestions: { type: integer, minimum: 1, maximum: 50 }
+        durationMinutes: { type: integer, minimum: 1, maximum: 240 }
+        showExplanations: { type: boolean }
+        active: { type: boolean }
+    StartRequest:
+      type: object
+      required: [assessmentId]
+      properties:
+        assessmentId: { type: integer }
+    AnswerRequest:
+      type: object
+      required: [sessionQuestionId, optionId]
+      properties:
+        sessionQuestionId: { type: integer }
+        optionId: { type: integer }
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a candidate (public registration never creates admins)
+      security: []
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/RegisterRequest" } },
+          }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { description: Email already registered }
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Log in and receive a JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/LoginRequest" } },
+          }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Current user
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /questions:
+    get:
+      tags: [Questions]
+      summary: Paginated question bank (admin)
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: topic, in: query, schema: { type: string } }
+        - {
+            name: difficulty,
+            in: query,
+            schema: { type: string, enum: [EASY, MEDIUM, HARD] },
+          }
+        - {
+            name: status,
+            in: query,
+            schema: { type: string, enum: [active, inactive] },
+          }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [Questions]
+      summary: Create a question (admin)
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/QuestionRequest" } },
+          }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /questions/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Questions]
+      summary: Get a question with correct answers (admin)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Questions]
+      summary: Update a question (admin). Options of already-used questions are locked.
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/QuestionRequest" } },
+          }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Questions]
+      summary: Delete a question; deactivates it instead if it was used in interviews (admin)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /assessments:
+    get:
+      tags: [Assessments]
+      summary: List assessments (candidates see active ones only)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+    post:
+      tags: [Assessments]
+      summary: Create an assessment (admin)
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/AssessmentRequest" } },
+          }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /assessments/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Assessments]
+      summary: Get an assessment
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Assessments]
+      summary: Update an assessment (admin)
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/AssessmentRequest" } },
+          }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Assessments]
+      summary: Delete, or deactivate if candidates already took it (admin)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /interviews/start:
+    post:
+      tags: [Interviews]
+      summary: Start an interview (candidate). Returns session id, expiry and the first question.
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/StartRequest" } },
+          }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /interviews/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Interviews]
+      summary: Session state (remaining time from the server clock, current question). Used to resume after refresh.
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /interviews/{id}/answer:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Interviews]
+      summary: Submit an answer. Returns correctness, difficulty change and the next question.
+      description: Answers are final. Correct option is revealed only if the assessment has showExplanations enabled.
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              { schema: { $ref: "#/components/schemas/AnswerRequest" } },
+          }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /interviews/{id}/finish:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Interviews]
+      summary: End the interview early or on timeout; generates the report (idempotent)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /reports:
+    get:
+      tags: [Reports]
+      summary: Report summaries. Candidates see their own; admins can filter by candidateId.
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+        - {
+            name: candidateId,
+            in: query,
+            schema: { type: integer },
+            description: Admin only,
+          }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+  /reports/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Reports]
+      summary: Full report (404 if it belongs to someone else)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /analytics/candidate/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Analytics]
+      summary: Candidate analytics (own data, or any candidate for admins)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /analytics/admin:
+    get:
+      tags: [Analytics]
+      summary: Platform-wide analytics (admin)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /candidates:
+    get:
+      tags: [Candidates]
+      summary: Candidate list with search, sort and pagination (admin)
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+        - { name: search, in: query, schema: { type: string } }
+        - {
+            name: sort,
+            in: query,
+            schema:
+              {
+                type: string,
+                enum: [name, email, joined, interviews, accuracy],
+              },
+          }
+        - { name: dir, in: query, schema: { type: string, enum: [asc, desc] } }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /candidates/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Candidates]
+      summary: Candidate profile with report history (admin)
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }

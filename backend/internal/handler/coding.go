@@ -114,3 +114,19 @@ func (h *CodingHandler) Finish(c *gin.Context) {
 	}
 	utils.Success(c, http.StatusOK, "coding session finished", nil)
 }
+func (h *CodingHandler) Skip(c *gin.Context) {
+	id, ok := parseID(c)
+	if !ok {
+		return
+	}
+	order, ok := parseOrder(c)
+	if !ok {
+		return
+	}
+	res, err := h.svc.Skip(c.GetUint("userID"), id, order)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	utils.Success(c, http.StatusOK, "problem skipped", res)
+}

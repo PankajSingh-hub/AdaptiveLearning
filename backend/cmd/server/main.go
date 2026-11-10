@@ -1,10 +1,10 @@
 package main
 
 import (
-	"log"
-	"time"
 	"adaptive-assessment/internal/apidocs"
 	"adaptive-assessment/internal/coding"
+	"log"
+	"time"
 
 	"adaptive-assessment/internal/config"
 	"adaptive-assessment/internal/database"
@@ -78,7 +78,7 @@ cod.GET("/sessions/:id/problems/:order", codingH.Problem)
 cod.POST("/sessions/:id/problems/:order/run", codingH.Run)
 cod.POST("/sessions/:id/problems/:order/submit", codingH.Submit)
 cod.POST("/sessions/:id/finish", codingH.Finish)
-
+	cod.POST("/sessions/:id/problems/:order/skip", codingH.Skip)
 	admin := protected.Group("", middleware.RequireRole(string(models.RoleAdmin)))
 	admin.GET("/questions", questionH.List)
 	admin.GET("/questions/:id", questionH.Get)

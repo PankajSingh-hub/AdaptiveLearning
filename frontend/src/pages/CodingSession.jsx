@@ -8,6 +8,7 @@ import {
   Play,
   RotateCcw,
   Send,
+  SkipForward,
   Sparkles,
 } from "lucide-react";
 import {
@@ -15,6 +16,7 @@ import {
   getCodingProblem,
   getCodingSession,
   runCode,
+  skipCoding,
   submitCode,
 } from "../services/candidateService";
 import { errMsg } from "../services/api";
@@ -61,12 +63,13 @@ export default function CodingSession() {
   const [lang, setLang] = useState(() => read(PREF_KEY) || "python");
   const [code, setCode] = useState("");
   const [result, setResult] = useState(null);
-  const [busy, setBusy] = useState(null); // null | 'run' | 'submit'
+  const [busy, setBusy] = useState(null); // null | 'run' | 'submit' | 'skip'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [left, setLeft] = useState(0);
   const [advance, setAdvance] = useState(null); // { next, left } after the 5th failed submit
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [confirmSkip, setConfirmSkip] = useState(false);
   const deadline = useRef(0);
   const finishing = useRef(false);
 
@@ -173,6 +176,24 @@ export default function CodingSession() {
     setResult(null);
   };
   const resetCode = () => onCode(problem.starter[lang]);
+
+  const skip = async () => {
+    if (busy) return;
+    setBusy("skip");
+    try {
+      const r = await skipCoding(id, order);
+      setConfirmSkip(false);
+      getCodingSession(id)
+        .then(setSession)
+        .catch(() => {});
+      goNext(r.nextOrder);
+    } catch (e) {
+      setConfirmSkip(false);
+      toast.error(errMsg(e));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const judge = async (kind) => {
     if (busy || !problem || problem.status !== "OPEN") return;
@@ -313,8 +334,8 @@ export default function CodingSession() {
                 )}
                 <p className="muted small" style={{ marginTop: 8 }}>
                   After the 5th failed submission the problem closes and you
-                  move to the next one. Compile errors and Run do not use a
-                  hint.
+                  move on. You can also skip a problem. Compile errors and Run
+                  do not use a hint.
                 </p>
               </div>
             </>
@@ -348,7 +369,12 @@ export default function CodingSession() {
                 </button>
               </div>
 
-              <CodeEditor value={code} onChange={onCode} disabled={!open} />
+              <CodeEditor
+                value={code}
+                onChange={onCode}
+                disabled={!open}
+                language={lang}
+              />
 
               {open ? (
                 <div className="run-actions">
@@ -367,6 +393,14 @@ export default function CodingSession() {
                   >
                     <Send size={16} />
                     {busy === "submit" ? "Judging..." : "Submit"}
+                  </button>
+                  <button
+                    className="btn"
+                    disabled={!!busy}
+                    onClick={() => setConfirmSkip(true)}
+                  >
+                    <SkipForward size={16} />
+                    Skip
                   </button>
                   <span className="muted small">
                     Run checks the examples for free. A failed Submit unlocks
@@ -418,6 +452,17 @@ export default function CodingSession() {
           message="Open problems will be marked skipped. You cannot resume after ending."
           onCancel={() => setConfirmEnd(false)}
           onConfirm={endNow}
+        />
+      )}
+
+      {confirmSkip && (
+        <ConfirmDialog
+          title="Skip this problem?"
+          confirmText="Skip"
+          busy={busy === "skip"}
+          message="You will get no points for it and cannot come back to it."
+          onCancel={() => setConfirmSkip(false)}
+          onConfirm={skip}
         />
       )}
     </>

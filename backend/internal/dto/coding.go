@@ -95,3 +95,7 @@ type CodingResult struct {
 	SessionDone   bool            `json:"sessionDone"`
 	Feedback      *CodingFeedback `json:"feedback,omitempty"`
 }
+type CodingSkipResponse struct {
+	NextOrder   int  `json:"nextOrder"` // 0 when no open problem is left
+	SessionDone bool `json:"sessionDone"`
+}

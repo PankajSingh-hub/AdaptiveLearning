@@ -36,3 +36,5 @@ export const submitCode = (id, order, language, code) =>
   );
 export const finishCoding = (id) =>
   unwrap(api.post(`/coding/sessions/${id}/finish`));
+export const skipCoding = (id, order) =>
+  unwrap(api.post(`/coding/sessions/${id}/problems/${order}/skip`));

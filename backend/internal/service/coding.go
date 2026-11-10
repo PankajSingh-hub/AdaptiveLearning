@@ -229,6 +229,47 @@ func (s *CodingService) Submit(candidateID, id uint, order int, req dto.CodeRequ
 	log.Printf("coding submission: session=%d problem=%s verdict=%s", id, p.Slug, out.Verdict)
 	return res, nil
 }
+// Skip permanently closes a problem without points and opens the next one.
+func (s *CodingService) Skip(candidateID, id uint, order int) (*dto.CodingSkipResponse, error) {
+	sess, err := s.loadSession(candidateID, id)
+	if err != nil {
+		return nil, err
+	}
+	if sess.Status != models.InProgress {
+		return nil, BadRequest("this coding session is already finished")
+	}
+	res := &dto.CodingSkipResponse{}
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		var cur models.CodingSessionProblem
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("session_id = ? AND order_no = ?", sess.ID, order).First(&cur).Error; err != nil {
+			return NotFound("problem not found")
+		}
+		if cur.Status != "OPEN" {
+			return BadRequest("this problem is already finished")
+		}
+		if err := tx.Model(&cur).Update("status", "SKIPPED").Error; err != nil {
+			return err
+		}
+		var next models.CodingSessionProblem
+		err := tx.Where("session_id = ? AND status = ? AND order_no > ?", sess.ID, "OPEN", order).
+			Order("order_no").First(&next).Error
+		if err != nil { // wrap around to the earliest open problem
+			err = tx.Where("session_id = ? AND status = ?", sess.ID, "OPEN").Order("order_no").First(&next).Error
+		}
+		if err == nil {
+			res.NextOrder = next.OrderNo
+			return nil
+		}
+		res.SessionDone = true
+		return closeCoding(tx, sess.ID, models.Completed)
+	})
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("coding problem skipped: session=%d order=%d", id, order)
+	return res, nil
+}
 
 func (s *CodingService) Finish(candidateID, id uint) error {
 	sess, err := s.loadSession(candidateID, id)

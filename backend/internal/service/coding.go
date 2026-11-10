@@ -41,8 +41,8 @@ func (s *CodingService) Languages() []dto.CodingLanguage {
 // an unexpired session for the same assessment is returned instead of creating a new one.
 func (s *CodingService) Start(candidateID, assessmentID uint) (*dto.CodingStartResponse, error) {
 	if len(s.ex.Languages()) == 0 {
-		return nil, BadRequest("no programming language toolchain is installed on the server")
-	}
+    return nil, BadRequest("code execution is disabled on this server")
+} 
 	var a models.Assessment
 	if err := s.db.Where("id = ? AND active = ? AND assessment_type = ?", assessmentID, true, "CODING").First(&a).Error; err != nil {
 		return nil, NotFound("coding assessment not found")
@@ -95,6 +95,7 @@ func (s *CodingService) GetSession(candidateID, id uint) (*dto.CodingSessionStat
 		SessionID: sess.ID, AssessmentTitle: a.Title, Status: string(sess.Status), Score: sess.Score,
 		Problems: make([]dto.CodingProblemSummary, 0, len(rows)),
 		Warnings: sess.Warnings, Terminated: sess.Terminated,
+		Sandboxed: s.ex.Sandboxed(),
 	}
 	if sess.Status == models.InProgress {
 		state.RemainingSec = max(0, int(time.Until(sess.ExpiresAt).Seconds()))

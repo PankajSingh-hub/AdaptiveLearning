@@ -4,6 +4,7 @@ import (
 	"adaptive-assessment/internal/apidocs"
 	"adaptive-assessment/internal/coding"
 	"log"
+	"os"
 	"time"
 
 	"adaptive-assessment/internal/config"
@@ -29,7 +30,7 @@ func main() {
 	assessmentSvc := service.NewAssessmentService(db)
 	analyticsSvc := service.NewAnalyticsService(db, reportSvc)
 	candidateSvc := service.NewCandidateService(db, reportSvc)
-	codingSvc := service.NewCodingService(db, coding.NewLocalExecutor(2))
+		codingSvc := service.NewCodingService(db, newExecutor())
 
 	authH := handler.NewAuthHandler(authSvc)
 	interviewH := handler.NewInterviewHandler(interviewSvc)
@@ -97,4 +98,25 @@ cod.POST("/sessions/:id/warning", codingH.Warn)
 
 	log.Printf("server running on :%s", cfg.Port)
 	log.Fatal(r.Run(":" + cfg.Port))
+}
+// CODING_EXECUTOR: "docker" (isolated containers), "local" (NO sandbox, demo only), "off" (disabled).
+func newExecutor() coding.Executor {
+	switch os.Getenv("CODING_EXECUTOR") {
+	case "off":
+		log.Println("coding: code execution is OFF")
+		return coding.OffExecutor{}
+	case "docker":
+		image := os.Getenv("JUDGE_IMAGE")
+		if image == "" {
+			image = "adaptiq-judge"
+		}
+		ex, err := coding.NewDockerExecutor(image, 2)
+		if err != nil {
+			log.Fatalf("coding: %v", err)
+		}
+		return ex
+	default:
+		log.Println("coding: WARNING local executor has NO sandbox; use it for local demos only")
+		return coding.NewLocalExecutor(2)
+	}
 }

@@ -38,6 +38,7 @@ type CodingSessionState struct {
 	Problems        []CodingProblemSummary `json:"problems"`
 		Warnings        int                    `json:"warnings"`
 	Terminated      bool                   `json:"terminated"`
+		Sandboxed       bool                   `json:"sandboxed"`
 }
 
 type CodingExample struct {

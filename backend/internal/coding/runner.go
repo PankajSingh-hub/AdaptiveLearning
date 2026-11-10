@@ -37,6 +37,7 @@ type Program interface {
 type Executor interface {
 	Languages() []LangInfo
 	Prepare(lang, source string, lineOffset int) (Program, error)
+	Sandboxed() bool
 }
 
 // LocalExecutor runs code on THIS machine. It is NOT a security sandbox: use it for local
@@ -44,8 +45,9 @@ type Executor interface {
 type LocalExecutor struct {
 	langs []LangInfo
 	sem   chan struct{}
+	
 }
-
+func (e *LocalExecutor) Sandboxed() bool { return false }
 var probes = []struct {
 	info LangInfo
 	cmd  []string

@@ -291,7 +291,14 @@ export default function CodingSession() {
         </button>
       </div>
 
-      <div className="cs-body">
+      {!session.sandboxed && (
+        <div className="demo-banner">
+          Local demo mode: your code runs on the host machine without a sandbox.
+          Never expose this deployment publicly.
+        </div>
+      )}
+
+      <div className={`cs-body ${!session.sandboxed ? "with-banner" : ""}`}>
         {/* LEFT: problem */}
         <div className="cs-pane">
           {!problem ? (

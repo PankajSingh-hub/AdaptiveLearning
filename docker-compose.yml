@@ -36,8 +36,10 @@ services:
       AUTO_MIGRATE: "false"
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       CANDIDATE_PASSWORD: ${CANDIDATE_PASSWORD:-}
+      CODING_EXECUTOR: "off"
     ports:
       - "8080:8080"
+
 
   frontend:
     build:

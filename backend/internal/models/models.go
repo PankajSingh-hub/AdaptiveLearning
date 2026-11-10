@@ -85,7 +85,7 @@ type InterviewSession struct {
 	ExpiresAt          time.Time
 	CompletedAt        *time.Time
 		Warnings           int
-	Terminated         bool
+		Terminated         bool `gorm:"column:is_terminated"`
 }
 
 type SessionQuestion struct {

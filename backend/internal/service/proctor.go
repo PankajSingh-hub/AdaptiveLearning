@@ -71,7 +71,7 @@ func (s *CodingService) Warn(candidateID, id uint, kind string) (*dto.WarningRes
 		res.Warnings = sess.Warnings
 		over := sess.Warnings >= MaxWarnings
 		if err := tx.Model(&models.CodingSession{}).Where("id = ?", id).
-			Updates(map[string]any{"warnings": sess.Warnings, "terminated": over}).Error; err != nil {
+			Updates(map[string]any{"warnings": sess.Warnings, "is_terminated": over}).Error; err != nil {
 			return err
 		}
 		if over {

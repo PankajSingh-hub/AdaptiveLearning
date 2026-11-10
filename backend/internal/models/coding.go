@@ -12,7 +12,7 @@ type CodingSession struct {
 	ExpiresAt    time.Time
 	CompletedAt  *time.Time
 		Warnings    int
-	Terminated  bool
+		Terminated  bool `gorm:"column:is_terminated"`
 }
 
 // ProblemSlug refers to a problem in the in-code catalog (internal/coding).

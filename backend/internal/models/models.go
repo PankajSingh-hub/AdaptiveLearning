@@ -84,6 +84,8 @@ type InterviewSession struct {
 	StartedAt          time.Time
 	ExpiresAt          time.Time
 	CompletedAt        *time.Time
+		Warnings           int
+	Terminated         bool
 }
 
 type SessionQuestion struct {

@@ -38,3 +38,7 @@ export const finishCoding = (id) =>
   unwrap(api.post(`/coding/sessions/${id}/finish`));
 export const skipCoding = (id, order) =>
   unwrap(api.post(`/coding/sessions/${id}/problems/${order}/skip`));
+export const warnInterview = (id, type) =>
+  unwrap(api.post(`/interviews/${id}/warning`, { type }));
+export const warnCoding = (id, type) =>
+  unwrap(api.post(`/coding/sessions/${id}/warning`, { type }));

@@ -11,6 +11,7 @@ import {
   finishInterview,
   getInterview,
   submitAnswer,
+  warnInterview,
 } from "../services/candidateService";
 import { errMsg } from "../services/api";
 import { useToast } from "../context/ToastContext";
@@ -24,7 +25,7 @@ import {
 import ConfirmDialog from "../components/ConfirmDialog";
 import { formatClock } from "../utils/format";
 import { APP_NAME } from "../utils/constants";
-
+import Proctor from "../components/Proctor";
 export default function InterviewSession() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -39,6 +40,7 @@ export default function InterviewSession() {
   const [busy, setBusy] = useState(false);
   const [left, setLeft] = useState(0);
   const [score, setScore] = useState(0);
+  const [warnings, setWarnings] = useState(0);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const deadline = useRef(0);
   const finishing = useRef(false);
@@ -55,6 +57,8 @@ export default function InterviewSession() {
         setScore(s.totalScore);
         deadline.current = Date.now() + s.remainingSec * 1000;
         setLeft(s.remainingSec);
+        setReady(true);
+        setWarnings(s.warnings ?? 0);
         setReady(true);
       })
       .catch((e) => setError(errMsg(e)))
@@ -75,6 +79,18 @@ export default function InterviewSession() {
       toast.error(errMsg(e));
     }
   }, [id, navigate, toast]);
+  const onViolation = useCallback(
+    async (type) => {
+      const r = await warnInterview(id, type);
+      if (r.terminated) {
+        toast.error("Interview ended after 3 proctoring warnings");
+        if (r.reportId) navigate(`/report/${r.reportId}`, { replace: true });
+        else endNow();
+      }
+      return r;
+    },
+    [id, navigate, toast, endNow],
+  );
 
   // Countdown. At zero the interview is submitted; the backend checks expiry again anyway.
   useEffect(() => {
@@ -143,6 +159,8 @@ export default function InterviewSession() {
 
   return (
     <>
+      <Proctor initialWarnings={warnings} onViolation={onViolation} />
+
       <div className="iv-top">
         <div className="brand" style={{ padding: 0 }}>
           <Sparkles size={20} color="#6d8dff" />

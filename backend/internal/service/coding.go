@@ -94,6 +94,7 @@ func (s *CodingService) GetSession(candidateID, id uint) (*dto.CodingSessionStat
 	state := &dto.CodingSessionState{
 		SessionID: sess.ID, AssessmentTitle: a.Title, Status: string(sess.Status), Score: sess.Score,
 		Problems: make([]dto.CodingProblemSummary, 0, len(rows)),
+		Warnings: sess.Warnings, Terminated: sess.Terminated,
 	}
 	if sess.Status == models.InProgress {
 		state.RemainingSec = max(0, int(time.Until(sess.ExpiresAt).Seconds()))

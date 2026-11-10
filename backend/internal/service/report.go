@@ -101,6 +101,7 @@ func (s *ReportService) GetByID(id, userID uint, admin bool) (*dto.ReportDTO, er
 		date = *sess.CompletedAt
 	}
 	return &dto.ReportDTO{
+		Warnings: sess.Warnings, Terminated: sess.Terminated,
 		ID: rep.ID, SessionID: rep.SessionID, CandidateID: rep.CandidateID,
 		CandidateName: user.Name, AssessmentTitle: assessment.Title, Date: date,
 		TotalQuestions: rep.TotalQuestions, Attempted: rep.Attempted, Correct: rep.CorrectCount,

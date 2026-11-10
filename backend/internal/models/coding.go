@@ -11,6 +11,8 @@ type CodingSession struct {
 	StartedAt    time.Time
 	ExpiresAt    time.Time
 	CompletedAt  *time.Time
+		Warnings    int
+	Terminated  bool
 }
 
 // ProblemSlug refers to a problem in the in-code catalog (internal/coding).

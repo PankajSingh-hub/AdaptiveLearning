@@ -37,9 +37,12 @@ export default function InterviewReport() {
             {r.candidateName} · {r.assessmentTitle} · {formatDate(r.date)}
           </p>
         </div>
-        <Badge tone={LEVEL_TONE[r.performanceLevel]}>
-          {formatLevel(r.performanceLevel)}
-        </Badge>
+        <div className="chips">
+          {r.terminated && <Badge tone="bad">Ended after 3 warnings</Badge>}
+          <Badge tone={LEVEL_TONE[r.performanceLevel]}>
+            {formatLevel(r.performanceLevel)}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid stats">
@@ -57,6 +60,7 @@ export default function InterviewReport() {
         <Stat label="Correct" value={r.correct} />
         <Stat label="Incorrect" value={r.incorrect} />
         <Stat label="Avg response (s)" value={r.avgResponseSec} decimals={1} />
+        <Stat label="Proctor warnings" value={r.warnings} />
       </div>
 
       <div className="grid two">

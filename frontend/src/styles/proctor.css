@@ -1,0 +1,87 @@
+.proctor-cam {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 60;
+  width: 176px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: #0a0d15;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.2s;
+}
+.proctor-cam.bad {
+  border-color: var(--bad);
+}
+.proctor-cam.ok {
+  border-color: rgba(52, 211, 153, 0.5);
+}
+.proctor-cam video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+.proctor-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.proctor-alert {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  padding: 16px;
+}
+.proctor-alert div {
+  background: rgba(220, 38, 38, 0.96);
+  color: #fff;
+  padding: 22px 34px;
+  border-radius: 16px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.4;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  animation: fadeUp 0.25s;
+}
+.proctor-alert small {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+.proctor-block {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 5, 10, 0.92);
+  backdrop-filter: blur(8px);
+}
+.proctor-block .card {
+  max-width: 420px;
+  text-align: center;
+}
+@media (max-width: 520px) {
+  .proctor-cam {
+    width: 112px;
+    left: 8px;
+    bottom: 78px;
+  }
+  .proctor-alert div {
+    font-size: 1.05rem;
+    padding: 18px 22px;
+  }
+}

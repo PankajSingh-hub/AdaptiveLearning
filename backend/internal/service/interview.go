@@ -78,7 +78,7 @@ func (s *InterviewService) Get(candidateID, sessionID uint) (*dto.InterviewState
 	state := &dto.InterviewState{
 		SessionID: sess.ID, AssessmentTitle: a.Title, Status: string(sess.Status),
 		ExpiresAt: sess.ExpiresAt, ServerTime: now, RemainingSec: remaining,
-		AnsweredCount: sess.AnsweredCount, Total: a.TotalQuestions, TotalScore: sess.TotalScore,
+		AnsweredCount: sess.AnsweredCount, Total: a.TotalQuestions, TotalScore: sess.TotalScore,Warnings:sess.Warnings,
 	}
 	if sess.Status == models.InProgress {
 		var sq models.SessionQuestion

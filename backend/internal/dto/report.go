@@ -38,6 +38,8 @@ type ReportDTO struct {
 	DifficultyBreakdown   []DifficultyStatDTO `json:"difficultyBreakdown"`
 	DifficultyProgression []string            `json:"difficultyProgression"`
 	Recommendations       []string            `json:"recommendations"`
+	Warnings   int  `json:"warnings"`
+Terminated bool `json:"terminated"`
 }
 
 type ReportSummary struct {
@@ -74,6 +76,9 @@ type InterviewState struct {
 	TotalScore      int          `json:"totalScore"`
 	Question        *QuestionDTO `json:"question,omitempty"`
 	ReportID        *uint        `json:"reportId,omitempty"`
+	Warnings   int  `json:"warnings"`
+
+	
 }
 
 type FinishResponse struct {

@@ -46,9 +46,12 @@ export default function CodingResult() {
             Continue session
           </Link>
         ) : (
-          <Badge tone={s.status === "COMPLETED" ? "good" : "warn"}>
-            {s.status}
-          </Badge>
+          <div className="chips">
+            {s.terminated && <Badge tone="bad">Ended after 3 warnings</Badge>}
+            <Badge tone={s.status === "COMPLETED" ? "good" : "warn"}>
+              {s.status}
+            </Badge>
+          </div>
         )}
       </div>
 
@@ -65,6 +68,7 @@ export default function CodingResult() {
         <Stat label="Solved" value={solved} />
         <Stat label="Problems" value={s.problems.length} />
         <Stat label="Hints used" value={hintsUsed} />
+        <Stat label="Proctor warnings" value={s.warnings} />
       </div>
 
       <div className="card">

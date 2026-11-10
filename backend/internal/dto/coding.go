@@ -36,6 +36,8 @@ type CodingSessionState struct {
 	MaxScore        int                    `json:"maxScore"`
 	Current         int                    `json:"current"` // order of the next open problem, 0 when finished
 	Problems        []CodingProblemSummary `json:"problems"`
+		Warnings        int                    `json:"warnings"`
+	Terminated      bool                   `json:"terminated"`
 }
 
 type CodingExample struct {
@@ -98,4 +100,14 @@ type CodingResult struct {
 type CodingSkipResponse struct {
 	NextOrder   int  `json:"nextOrder"` // 0 when no open problem is left
 	SessionDone bool `json:"sessionDone"`
+}
+type WarningRequest struct {
+	Type string `json:"type" binding:"required,oneof=NO_PERSON MULTIPLE_PEOPLE"`
+}
+
+type WarningResponse struct {
+	Warnings   int   `json:"warnings"`
+	Max        int   `json:"max"`
+	Terminated bool  `json:"terminated"`
+	ReportID   *uint `json:"reportId,omitempty"` // quiz interviews only
 }

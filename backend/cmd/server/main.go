@@ -52,7 +52,8 @@ codingH := handler.NewCodingHandler(codingSvc)
 
 	api := r.Group("/api")
 	api.POST("/auth/register", authH.Register)
-	api.POST("/auth/login", authH.Login)
+	limiter := middleware.NewLoginLimiter()
+api.POST("/auth/login", limiter.Guard(), authH.Login)
 
 	protected := api.Group("", middleware.Auth(authSvc))
 	protected.GET("/auth/me", authH.Me)

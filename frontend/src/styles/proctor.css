@@ -7,7 +7,7 @@
   border-radius: 14px;
   overflow: hidden;
   border: 2px solid var(--border);
-  background: #0a0d15;
+  background: #0a0f0c;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   transition: border-color 0.2s;
 }

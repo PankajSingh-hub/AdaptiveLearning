@@ -18,6 +18,7 @@ import {
   runCode,
   skipCoding,
   submitCode,
+  warnCoding,
 } from "../services/candidateService";
 import { errMsg } from "../services/api";
 import { useToast } from "../context/ToastContext";
@@ -30,6 +31,7 @@ import {
 import ConfirmDialog from "../components/ConfirmDialog";
 import CodeEditor from "../components/CodeEditor";
 import ResultPanel from "../components/ResultPanel";
+import Proctor from "../components/Proctor";
 import { formatClock } from "../utils/format";
 import { APP_NAME } from "../utils/constants";
 import "../styles/coding.css";
@@ -137,6 +139,19 @@ export default function CodingSession() {
     toResult();
   }, [id, toResult, toast]);
 
+  // Camera check reports each warning to the backend; the third one ends the session.
+  const onViolation = useCallback(
+    async (type) => {
+      const r = await warnCoding(id, type);
+      if (r.terminated) {
+        toast.error("Coding session ended after 3 proctoring warnings");
+        toResult();
+      }
+      return r;
+    },
+    [id, toResult, toast],
+  );
+
   // Countdown. At zero the session is closed; the backend enforces expiry on its own as well.
   useEffect(() => {
     if (!session) return;
@@ -240,9 +255,14 @@ export default function CodingSession() {
 
   return (
     <>
+      <Proctor
+        initialWarnings={session.warnings ?? 0}
+        onViolation={onViolation}
+      />
+
       <div className="iv-top cs-top">
         <div className="brand" style={{ padding: 0 }}>
-          <Sparkles size={20} color="#6d8dff" />
+          <Sparkles size={20} color="#e8b86a" />
           <span className="grad">{APP_NAME}</span>
         </div>
         <div className="pchips">
@@ -309,7 +329,7 @@ export default function CodingSession() {
 
               <div className="card">
                 <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Lightbulb size={18} color="#fbbf24" /> Hints
+                  <Lightbulb size={18} color="#e8c46e" /> Hints
                   <span className="muted small" style={{ marginLeft: "auto" }}>
                     {problem.failures} of {problem.maxFailures} used
                   </span>
@@ -317,7 +337,7 @@ export default function CodingSession() {
                 {Array.from({ length: problem.maxFailures }, (_, i) =>
                   problem.hints[i] ? (
                     <div key={i} className="hint on">
-                      <Lightbulb size={16} color="#fbbf24" />
+                      <Lightbulb size={16} color="#e8c46e" />
                       <span>{problem.hints[i]}</span>
                     </div>
                   ) : (

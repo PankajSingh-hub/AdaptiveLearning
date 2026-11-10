@@ -163,7 +163,7 @@ export default function InterviewSession() {
 
       <div className="iv-top">
         <div className="brand" style={{ padding: 0 }}>
-          <Sparkles size={20} color="#6d8dff" />
+          <Sparkles size={20} color="#e8b86a" />
           <span className="grad">{APP_NAME}</span>
         </div>
         <div className={`timer mono ${left <= 60 ? "low" : ""}`}>
@@ -228,9 +228,9 @@ export default function InterviewSession() {
               }}
             >
               {result.correct ? (
-                <CheckCircle2 size={20} color="#34d399" />
+                <CheckCircle2 size={20} color="#86d1a0" />
               ) : (
-                <XCircle size={20} color="#f87171" />
+                <XCircle size={20} color="#e5846a" />
               )}
               {result.correct
                 ? `Correct · +${result.pointsAwarded} pts`

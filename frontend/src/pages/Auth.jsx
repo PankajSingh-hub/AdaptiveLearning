@@ -8,7 +8,8 @@ import { APP_NAME, homeFor } from "../utils/constants";
 
 export default function Auth({ mode }) {
   const isRegister = mode === "register";
-  const { user, login } = useAuth();
+  const isAdminLogin = mode === "admin";
+  const { user, login, logout } = useAuth();
   const navigate = useNavigate();
   const [f, setF] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
@@ -31,6 +32,11 @@ export default function Auth({ mode }) {
     try {
       if (isRegister) await register(f.name.trim(), f.email.trim(), f.password);
       const u = await login(f.email.trim(), f.password);
+      if (isAdminLogin && u.role !== "ADMIN") {
+        logout();
+        setError("This account does not have admin access");
+        return;
+      }
       navigate(homeFor(u.role), { replace: true });
     } catch (err) {
       setError(errMsg(err));
@@ -43,11 +49,15 @@ export default function Auth({ mode }) {
     <div className="auth">
       <form className="card" onSubmit={submit}>
         <div className="brand" style={{ paddingLeft: 0 }}>
-          <Sparkles size={24} color="#6d8dff" />
+          <Sparkles size={24} color="#e8b86a" />
           <span className="grad">{APP_NAME}</span>
         </div>
         <h1 style={{ marginBottom: 4 }}>
-          {isRegister ? "Create your account" : "Welcome back"}
+          {isRegister
+            ? "Create your account"
+            : isAdminLogin
+              ? "Admin sign in"
+              : "Welcome back"}
         </h1>
         <p className="muted" style={{ marginBottom: 24 }}>
           Adaptive technical assessments that match your level.
@@ -94,15 +104,17 @@ export default function Auth({ mode }) {
           {busy ? "Please wait..." : isRegister ? "Create account" : "Sign in"}
         </button>
 
-        <p
-          className="muted small"
-          style={{ marginTop: 18, textAlign: "center" }}
-        >
-          {isRegister ? "Already have an account? " : "New here? "}
-          <Link to={isRegister ? "/login" : "/register"} className="grad">
-            {isRegister ? "Sign in" : "Create an account"}
-          </Link>
-        </p>
+        {!isAdminLogin && (
+          <p
+            className="muted small"
+            style={{ marginTop: 18, textAlign: "center" }}
+          >
+            {isRegister ? "Already have an account? " : "New here? "}
+            <Link to={isRegister ? "/login" : "/register"} className="grad">
+              {isRegister ? "Sign in" : "Create an account"}
+            </Link>
+          </p>
+        )}
 
         {!isRegister && import.meta.env.DEV && (
           <div
@@ -121,19 +133,6 @@ export default function Auth({ mode }) {
               }
             >
               Fill demo candidate
-            </button>
-            <button
-              type="button"
-              className="btn small"
-              onClick={() =>
-                setF({
-                  ...f,
-                  email: "admin@example.com",
-                  password: "Admin@12345",
-                })
-              }
-            >
-              Fill demo admin
             </button>
           </div>
         )}

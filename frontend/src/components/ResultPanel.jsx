@@ -21,9 +21,9 @@ function CaseRow({ c }) {
     <div className="case">
       <div className="case-head">
         {c.passed ? (
-          <CheckCircle2 size={16} color="#34d399" />
+          <CheckCircle2 size={16} color="#86d1a0" />
         ) : (
-          <XCircle size={16} color="#f87171" />
+          <XCircle size={16} color="#e5846a" />
         )}
         <strong>{c.visible ? "Example" : "Hidden test"}</strong>
         {!c.visible && <span className="muted small">{c.tag}</span>}
@@ -103,7 +103,7 @@ export default function ResultPanel({ r }) {
               fontWeight: 600,
             }}
           >
-            <Lightbulb size={18} color="#fbbf24" /> Hint {r.hintNumber} of 5
+            <Lightbulb size={18} color="#e8c46e" /> Hint {r.hintNumber} of 5
           </div>
           <p style={{ marginTop: 6 }}>{r.hint}</p>
         </div>

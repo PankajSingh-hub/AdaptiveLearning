@@ -14,21 +14,21 @@ import {
 } from "recharts";
 
 const C = {
-  accent: "#6d8dff",
-  teal: "#38e0c8",
-  good: "#34d399",
-  bad: "#f87171",
-  grid: "rgba(255,255,255,.08)",
-  text: "#8b95ad",
+  accent: "#e8b86a",
+  teal: "#8fc9a4",
+  good: "#86d1a0",
+  bad: "#e5846a",
+  grid: "rgba(236,231,220,.08)",
+  text: "#8e9a90",
 };
 const tip = {
   contentStyle: {
-    background: "#10131d",
-    border: "1px solid rgba(255,255,255,.1)",
+    background: "#17211b",
+    border: "1px solid rgba(236,231,220,.1)",
     borderRadius: 10,
   },
-  itemStyle: { color: "#e8ecf5" },
-  labelStyle: { color: "#8b95ad" },
+  itemStyle: { color: "#ece7dc" },
+  labelStyle: { color: "#8e9a90" },
 };
 const axis = {
   tick: { fill: C.text, fontSize: 12 },
@@ -83,7 +83,7 @@ export function HBars({
         <YAxis type="category" dataKey={nameKey} width={120} {...axis} />
         <Tooltip
           {...tip}
-          cursor={{ fill: "rgba(255,255,255,.04)" }}
+          cursor={{ fill: "rgba(236,231,220,.04)" }}
           formatter={(v) => `${v}${unit}`}
         />
         <Bar dataKey={dataKey} radius={[0, 8, 8, 0]} barSize={16}>

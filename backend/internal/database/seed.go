@@ -1,6 +1,8 @@
 package database
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"log"
 	"os"
 
@@ -12,11 +14,38 @@ import (
 
 // Seed fills an empty database with demo data. It is safe to run on every start.
 func Seed(db *gorm.DB) {
-	seedUser(db, "Admin", "admin@example.com", env("ADMIN_PASSWORD", "Admin@12345"), models.RoleAdmin)
-	seedUser(db, "Sample Candidate", "candidate@example.com", env("CANDIDATE_PASSWORD", "Candidate@123"), models.RoleCandidate)
+	seedAdmin(db)
+	// The demo candidate is only created when you opt in (local development).
+	if os.Getenv("SEED_DEMO_CANDIDATE") == "true" {
+		seedUser(db, "Sample Candidate", "candidate@example.com", env("CANDIDATE_PASSWORD", "Candidate@123"), models.RoleCandidate)
+	}
 	seedQuestions(db)
 	seedAssessments(db)
 	seedCodingAssessment(db)
+}
+
+// seedAdmin never uses a well-known password: set ADMIN_PASSWORD, or a random one is generated and logged once.
+func seedAdmin(db *gorm.DB) {
+	const email = "admin@example.com"
+	var count int64
+	db.Model(&models.User{}).Where("email = ?", email).Count(&count)
+	if count > 0 {
+		return
+	}
+	pw := os.Getenv("ADMIN_PASSWORD")
+	if pw == "" {
+		pw = randomPassword()
+		log.Printf("ADMIN ACCOUNT CREATED: email=%s password=%s (shown once, store it safely)", email, pw)
+	}
+	seedUser(db, "Admin", email, pw, models.RoleAdmin)
+}
+
+func randomPassword() string {
+	b := make([]byte, 12)
+	if _, err := rand.Read(b); err != nil {
+		log.Fatalf("seed: random password failed: %v", err)
+	}
+	return hex.EncodeToString(b)
 }
 
 func env(key, fallback string) string {

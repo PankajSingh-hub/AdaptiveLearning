@@ -61,7 +61,7 @@
 .desc {
   white-space: pre-wrap;
   line-height: 1.65;
-  color: #cdd5e6;
+  color: #d9d3c5;
   font-size: 0.95rem;
 }
 .example {
@@ -115,13 +115,13 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
-  background: #0a0d15;
+  background: #0a0f0c;
 }
 .editor .gutter {
   margin: 0;
   padding: 14px 10px 40px 12px;
   text-align: right;
-  color: #4b556d;
+  color: #566358;
   user-select: none;
   overflow: hidden;
   font:
@@ -137,7 +137,7 @@
   outline: 0;
   resize: none;
   background: transparent;
-  color: #e8ecf5;
+  color: #ece7dc;
   padding: 14px;
   font:
     13px/1.6 "JetBrains Mono",
@@ -191,7 +191,7 @@
   font:
     12.5px/1.55 "JetBrains Mono",
     monospace;
-  color: #cdd5e6;
+  color: #d9d3c5;
   margin-top: 6px;
   overflow-x: auto;
   white-space: pre;
@@ -199,7 +199,7 @@
 .notes {
   margin: 10px 0 0;
   padding-left: 18px;
-  color: #cdd5e6;
+  color: #d9d3c5;
   font-size: 0.9rem;
 }
 .notes li {

@@ -43,7 +43,7 @@ export default function Layout() {
     <div className="shell">
       <aside className={`sidebar ${open ? "open" : ""}`}>
         <div className="brand">
-          <Sparkles size={22} color="#6d8dff" />
+          <Sparkles size={22} color="#e8b86a" />
           <span className="grad">{APP_NAME}</span>
         </div>
         <nav className="nav">
@@ -89,7 +89,7 @@ export default function Layout() {
             <span className="avatar">{user.name?.[0]?.toUpperCase()}</span>
           </div>
         </header>
-        <main className="content">
+        <main className="content" key={pathname}>
           <Outlet />
         </main>
       </div>

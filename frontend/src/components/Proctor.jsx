@@ -206,7 +206,7 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
             )}
             {status === "denied" && (
               <>
-                <CameraOff size={32} color="#f87171" />
+                <CameraOff size={32} color="#e5846a" />
                 <h2 style={{ marginTop: 10 }}>Camera access is required</h2>
                 <p className="muted small" style={{ marginBottom: 16 }}>
                   This assessment checks that one person is in front of the
@@ -224,7 +224,7 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
             )}
             {status === "error" && (
               <>
-                <CameraOff size={32} color="#f87171" />
+                <CameraOff size={32} color="#e5846a" />
                 <h2 style={{ marginTop: 10 }}>Could not load the detector</h2>
                 <p className="muted small" style={{ marginBottom: 16 }}>
                   The detection model is downloaded from the internet. Check

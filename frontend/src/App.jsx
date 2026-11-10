@@ -36,6 +36,8 @@ export default function App() {
           </div>
           <Routes>
             <Route path="/login" element={<Auth mode="login" />} />
+            <Route path="/admin/login" element={<Auth mode="admin" />} />
+
             <Route path="/register" element={<Auth mode="register" />} />
             <Route
               path="/interview/:id"

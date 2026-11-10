@@ -6,7 +6,6 @@ services:
       MYSQL_DATABASE: adaptive_assessment
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     ports:
       - "3307:3306" # 3307 so it doesn't clash with a MySQL already running on your Mac
     healthcheck:
@@ -33,13 +32,12 @@ services:
       DB_NAME: adaptive_assessment
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       ALLOWED_ORIGIN: http://localhost:5173
-      AUTO_MIGRATE: "false"
+      RUN_MIGRATIONS: "true"
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       CANDIDATE_PASSWORD: ${CANDIDATE_PASSWORD:-}
       CODING_EXECUTOR: "off"
     ports:
       - "8080:8080"
-
 
   frontend:
     build:

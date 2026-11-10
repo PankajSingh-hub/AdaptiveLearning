@@ -15,7 +15,7 @@ type Config struct {
 	JWTSecret     string
 	JWTExpiryHrs  int
 	AllowedOrigin string
-	AutoMigrate   bool
+	RunMigrations bool
 }
 
 func Load() *Config {
@@ -34,7 +34,7 @@ func Load() *Config {
 		JWTSecret:     secret,
 		JWTExpiryHrs:  hrs,
 		AllowedOrigin: get("ALLOWED_ORIGIN", "http://localhost:5173"),
-		AutoMigrate:   get("AUTO_MIGRATE", "true") == "true",
+		RunMigrations: get("RUN_MIGRATIONS", "true") == "true",
 	}
 }
 

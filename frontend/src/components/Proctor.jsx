@@ -14,7 +14,7 @@ const SAMPLE_MS = 500; // how often the frame is checked
 const BAD_SAMPLES = 4; // 4 x 500 ms = a problem must last 2 seconds in a row
 const COOLDOWN_MS = 5000; // grace period after a warning
 const ALERT_MS = 2000; // how long the red label stays on screen
-export const MAX_WARNINGS = 3;
+const MAX_WARNINGS = 3;
 
 const MESSAGES = {
   NO_PERSON: "No person detected in the camera frame",
@@ -49,7 +49,10 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
 
   const warnRef = useRef(initialWarnings);
   const violationRef = useRef(onViolation);
-  violationRef.current = onViolation;
+
+  useEffect(() => {
+    violationRef.current = onViolation;
+  });
   const alertTimer = useRef(null);
 
   useEffect(() => {
@@ -59,7 +62,6 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
     let timer = null;
     let bad = 0;
     let quietUntil = 0;
-    setStatus("loading");
 
     const raise = (type) => {
       warnRef.current += 1;
@@ -158,6 +160,10 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
         : people === 1
           ? "1 person"
           : `${people} people`;
+  const retry = () => {
+    setStatus("loading");
+    setAttempt((a) => a + 1);
+  };
 
   return (
     <>
@@ -213,10 +219,7 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
                   camera. Allow camera access in your browser's address bar,
                   then try again. The timer keeps running.
                 </p>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setAttempt((a) => a + 1)}
-                >
+                <button className="btn btn-primary" onClick={retry}>
                   <Camera size={16} />
                   Try again
                 </button>
@@ -230,10 +233,7 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
                   The detection model is downloaded from the internet. Check
                   your connection and try again.
                 </p>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setAttempt((a) => a + 1)}
-                >
+                <button className="btn btn-primary" onClick={retry}>
                   Try again
                 </button>
               </>

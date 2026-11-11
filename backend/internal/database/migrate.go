@@ -57,14 +57,22 @@ func Migrate(dsn string) error {
 		return err
 	}
 	for rows.Next() {
-		var v int
-		if err := rows.Scan(&v); err != nil {
-			rows.Close()
-			return err
-		}
-		applied[v] = true
-	}
-	rows.Close()
+    var v int
+    if err := rows.Scan(&v); err != nil {
+        rows.Close()
+        return err
+    }
+    applied[v] = true
+}
+
+if err := rows.Err(); err != nil {
+    rows.Close()
+    return err
+}
+
+if err := rows.Close(); err != nil {
+    return err
+}
 
 	files, err := migrationFS.ReadDir("migrations") // returned sorted by file name
 	if err != nil {

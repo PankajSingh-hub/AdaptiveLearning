@@ -167,7 +167,29 @@ func (s *CodingService) Submit(candidateID, id uint, order int, req dto.CodeRequ
 
 	var res *dto.CodingResult
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		var cur models.CodingSessionProblem
+
+    var live models.CodingSession
+    if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&live, sess.ID).Error; err != nil {
+        return NotFound("coding session not found")
+    }
+    if live.Status != models.InProgress {
+        return BadRequest("this coding session is already finished")
+    }
+    if time.Now().After(live.ExpiresAt) {
+        res = &dto.CodingResult{
+            Mode: "submit", Verdict: "EXPIRED", Expired: true,
+            SessionDone: true, Cases: []dto.CodingCase{},
+        }
+        if err := tx.Create(&models.CodingSubmission{
+            SessionProblemID: row.ID, Language: req.Language, Code: req.Code, Verdict: "EXPIRED",
+            Passed: out.Passed, Total: out.Total, RuntimeMs: out.MaxMillis,
+        }).Error; err != nil {
+            return err
+        }
+        return closeCoding(tx, live.ID, models.Expired)
+    }
+
+    var cur models.CodingSessionProblem
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&cur, row.ID).Error; err != nil {
 			return NotFound("problem not found")
 		}
@@ -241,8 +263,17 @@ func (s *CodingService) Skip(candidateID, id uint, order int) (*dto.CodingSkipRe
 		return nil, BadRequest("this coding session is already finished")
 	}
 	res := &dto.CodingSkipResponse{}
-	err = s.db.Transaction(func(tx *gorm.DB) error {
-		var cur models.CodingSessionProblem
+err = s.db.Transaction(func(tx *gorm.DB) error {
+
+    var live models.CodingSession
+    if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&live, sess.ID).Error; err != nil {
+        return NotFound("coding session not found")
+    }
+    if live.Status != models.InProgress || time.Now().After(live.ExpiresAt) {
+        return BadRequest("this coding session is already finished")
+    }
+
+    var cur models.CodingSessionProblem
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("session_id = ? AND order_no = ?", sess.ID, order).First(&cur).Error; err != nil {
 			return NotFound("problem not found")

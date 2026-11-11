@@ -21,7 +21,7 @@ import {
   warnCoding,
 } from "../services/candidateService";
 import { errMsg } from "../services/api";
-import { useToast } from "../context/ToastContext";
+import { useToast } from "../context/toastCtx";
 import {
   Badge,
   DifficultyBadge,
@@ -75,13 +75,21 @@ export default function CodingSession() {
   const deadline = useRef(0);
   const finishing = useRef(false);
 
+  const selectOrder = useCallback((n) => {
+    setProblem(null);
+    setResult(null);
+    setAdvance(null);
+    setOrder(n);
+  }, []);
+
   const toResult = useCallback(
     () => navigate(`/coding/${id}/result`, { replace: true }),
     [id, navigate],
   );
+
   const goNext = useCallback(
-    (next) => (next ? setOrder(next) : toResult()),
-    [toResult],
+    (next) => (next ? selectOrder(next) : toResult()),
+    [toResult, selectOrder],
   );
 
   // Load the session. The server is the source of truth for remaining time.
@@ -99,32 +107,29 @@ export default function CodingSession() {
   }, [id, toResult]);
 
   // Load the selected problem.
+  // Load the selected problem.
   useEffect(() => {
     if (!order) return;
     let cancelled = false;
-    setProblem(null);
-    setResult(null);
-    setAdvance(null);
+
     getCodingProblem(id, order)
       .then((p) => {
         if (cancelled) return;
-        setProblem(p);
         const langs = Object.keys(p.starter);
-        setLang((l) => (langs.includes(l) ? l : langs[0]));
+        const pref = read(PREF_KEY) || "python";
+        const l = langs.includes(pref) ? pref : langs[0];
+        setProblem(p);
+        setLang(l);
+        setCode(read(draftKey(id, p.order, l)) ?? p.starter[l] ?? "");
       })
       .catch((e) => !cancelled && toast.error(errMsg(e)));
+
     return () => {
       cancelled = true;
     };
   }, [id, order, toast]);
 
   // Load the draft (or the starter code) whenever the problem or language changes.
-  useEffect(() => {
-    if (!problem || !lang) return;
-    setCode(
-      read(draftKey(id, problem.order, lang)) ?? problem.starter[lang] ?? "",
-    );
-  }, [problem, lang, id]);
 
   const endNow = useCallback(async () => {
     if (finishing.current) return;
@@ -168,16 +173,15 @@ export default function CodingSession() {
   }, [session, endNow, toast]);
 
   // Auto-advance after the 5th failed submit.
+  // Auto-advance after the 5th failed submit.
   useEffect(() => {
     if (!advance) return;
-    if (advance.left <= 0) {
-      goNext(advance.next);
-      return;
-    }
-    const t = setTimeout(
-      () => setAdvance((a) => a && { ...a, left: a.left - 1 }),
-      1000,
-    );
+
+    const t = setTimeout(() => {
+      if (advance.left <= 1) goNext(advance.next);
+      else setAdvance((a) => a && { ...a, left: a.left - 1 });
+    }, 1000);
+
     return () => clearTimeout(t);
   }, [advance, goNext]);
 
@@ -189,6 +193,7 @@ export default function CodingSession() {
     setLang(l);
     write(PREF_KEY, l);
     setResult(null);
+    setCode(read(draftKey(id, order, l)) ?? problem.starter[l] ?? "");
   };
   const resetCode = () => onCode(problem.starter[lang]);
 
@@ -222,6 +227,12 @@ export default function CodingSession() {
         lang,
         code,
       );
+      if (r.expired) {
+        toast.error("Time expired: this submission was not scored");
+        toResult();
+        return;
+      }
+
       setResult(r);
       if (kind === "submit") {
         setProblem((p) => ({
@@ -272,7 +283,7 @@ export default function CodingSession() {
               className={`pchip ${p.status} ${p.order === order ? "cur" : ""}`}
               disabled={!!busy}
               title={`${p.order}. ${p.title}`}
-              onClick={() => setOrder(p.order)}
+              onClick={() => selectOrder(p.order)}
             >
               {p.order}
             </button>

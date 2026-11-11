@@ -1,8 +1,7 @@
-import { createContext, useCallback, useMemo, useState } from "react";
+import { AuthContext } from "./authCtx";
+import { useCallback, useMemo, useState } from "react";
 import * as authService from "../services/authService";
 import { TOKEN_KEY, USER_KEY } from "../services/api";
-
-export const AuthContext = createContext(null);
 
 const readUser = () => {
   try {

@@ -97,6 +97,7 @@ type CodingResult struct {
 	NextOrder     int             `json:"nextOrder"` // 0 when there is no further problem
 	SessionDone   bool            `json:"sessionDone"`
 	Feedback      *CodingFeedback `json:"feedback,omitempty"`
+	Expired       bool            `json:"expired"`
 }
 type CodingSkipResponse struct {
 	NextOrder   int  `json:"nextOrder"` // 0 when no open problem is left

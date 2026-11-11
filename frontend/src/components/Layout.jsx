@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ClipboardList,
@@ -31,7 +31,6 @@ export default function Layout() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  useEffect(() => setOpen(false), [pathname]);
 
   const items = isAdmin ? ADMIN_NAV : CANDIDATE_NAV;
   const onLogout = () => {
@@ -52,6 +51,7 @@ export default function Layout() {
               key={to}
               to={to}
               end={to === "/admin" || to === "/dashboard"}
+              onClick={() => setOpen(false)}
             >
               <Icon size={18} />
               {label}

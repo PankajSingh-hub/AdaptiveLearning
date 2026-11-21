@@ -4,6 +4,7 @@ import (
 	"adaptive-assessment/internal/apidocs"
 	"adaptive-assessment/internal/coding"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -14,10 +15,11 @@ import (
 	"adaptive-assessment/internal/models"
 	"adaptive-assessment/internal/service"
 
+	"adaptive-assessment/internal/mailer"
+	_ "time/tzdata"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"adaptive-assessment/internal/mailer"
-	_"time/tzdata"
 )
 
 func main() {
@@ -57,6 +59,7 @@ profileH := handler.NewProfileHandler(profileSvc)
 		AllowHeaders: []string{"Authorization", "Content-Type"},
 		MaxAge:       12 * time.Hour,
 	}))
+	r.Use(middleware.BodyLimit(64<<10, 512<<10))
 
 	apidocs.Register(r)
 	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
@@ -118,7 +121,15 @@ cod.POST("/sessions/:id/warning", codingH.Warn)
 	admin.GET("/analytics/admin", analyticsH.Admin)
 
 	log.Printf("server running on :%s", cfg.Port)
-	log.Fatal(r.Run(":" + cfg.Port))
+	srv := &http.Server{
+    Addr:              ":" + cfg.Port,
+    Handler:           r,
+    ReadHeaderTimeout: 10 * time.Second,
+    ReadTimeout:       30 * time.Second,
+    WriteTimeout:      3 * time.Minute,
+    IdleTimeout:       2 * time.Minute,
+}
+log.Fatal(srv.ListenAndServe())
 }
 // CODING_EXECUTOR: "docker" (isolated containers), "local" (NO sandbox, demo only), "off" (disabled).
 func newExecutor() coding.Executor {

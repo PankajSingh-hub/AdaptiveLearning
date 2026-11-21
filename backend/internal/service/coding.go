@@ -74,8 +74,17 @@ func (s *CodingService) Start(candidateID, assessmentID uint) (*dto.CodingStartR
 		return tx.Create(&rows).Error
 	})
 	if err != nil {
-		return nil, err
-	}
+    if isDuplicateKey(err) {
+        var again models.CodingSession
+        if e := s.db.Where(
+            "candidate_id = ? AND assessment_id = ? AND status = ?",
+            candidateID, a.ID, models.InProgress,
+        ).First(&again).Error; e == nil {
+            return &dto.CodingStartResponse{SessionID: again.ID}, nil
+        }
+    }
+    return nil, err
+}
 	log.Printf("coding session started: session=%d candidate=%d problems=%d", sess.ID, candidateID, n)
 	return &dto.CodingStartResponse{SessionID: sess.ID}, nil
 }

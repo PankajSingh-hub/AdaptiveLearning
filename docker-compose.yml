@@ -7,7 +7,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "3307:3306" # 3307 so it doesn't clash with a MySQL already running on your Mac
+      - "127.0.0.1:3307:3306"
     healthcheck:
       test:
         [
@@ -18,11 +18,31 @@ services:
       timeout: 5s
       retries: 20
 
-  backend:
+  migrate:
     build: ./backend
+    image: adaptiq-backend
+    entrypoint: ["/migrate"]
+    restart: "no"
     depends_on:
       mysql:
         condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: adaptive_assessment
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      APP_ENV: ${APP_ENV:-development}
+
+  backend:
+    build: ./backend
+    image: adaptiq-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       PORT: "8080"
       DB_HOST: mysql
@@ -31,12 +51,14 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: adaptive_assessment
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-8}
       ALLOWED_ORIGIN: http://localhost:5173
-      RUN_MIGRATIONS: "true"
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      CANDIDATE_PASSWORD: ${CANDIDATE_PASSWORD:-}
+      APP_ENV: ${APP_ENV:-development}
+      RUN_MIGRATIONS: "false"
       CODING_EXECUTOR: "off"
-            DEMO_LOGIN: ${DEMO_LOGIN:-false}
+      DEMO_LOGIN: ${DEMO_LOGIN:-false}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}

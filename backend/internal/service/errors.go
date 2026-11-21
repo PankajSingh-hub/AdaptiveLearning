@@ -1,6 +1,11 @@
 package service
 
-import "net/http"
+import (
+	"errors"
+	"net/http"
+
+	"github.com/go-sql-driver/mysql"
+)
 
 // AppError carries an HTTP status so handlers never leak raw errors.
 type AppError struct {
@@ -19,3 +24,8 @@ func Conflict(msg string) *AppError { return &AppError{http.StatusConflict, msg}
 func TooMany(msg string) *AppError    { return &AppError{http.StatusTooManyRequests, msg} }
 func BadGateway(msg string) *AppError { return &AppError{http.StatusBadGateway, msg} }
 func Forbidden(msg string) *AppError { return &AppError{http.StatusForbidden, msg} }
+// isDuplicateKey reports a violated UNIQUE constraint (MySQL error 1062).
+func isDuplicateKey(err error) bool {
+	var me *mysql.MySQLError
+	return errors.As(err, &me) && me.Number == 1062
+}

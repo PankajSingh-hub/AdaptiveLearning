@@ -1,6 +1,7 @@
 package service
 
 import (
+	 "errors"
 	"log"
 	"time"
 
@@ -26,6 +27,10 @@ func (s *InterviewService) Start(candidateID, assessmentID uint) (*dto.StartResp
 	if err := s.db.Where("id = ? AND active = ? AND assessment_type = ?", assessmentID, true, "MCQ").First(&a).Error; err != nil {
 		return nil, NotFound("assessment not found")
 	}
+	if res, err := s.resumeActive(candidateID, a.ID); err != nil || res != nil {
+		return res, err
+	}
+
 	now := time.Now()
 	sess := models.InterviewSession{
 		CandidateID: candidateID, AssessmentID: a.ID, Status: models.InProgress,
@@ -42,6 +47,11 @@ func (s *InterviewService) Start(candidateID, assessmentID uint) (*dto.StartResp
 		return err
 	})
 	if err != nil {
+		if isDuplicateKey(err) { // a parallel request created the attempt first: use it
+			if res, e2 := s.resumeActive(candidateID, a.ID); e2 != nil || res != nil {
+				return res, e2
+			}
+		}
 		return nil, err
 	}
 	if first == nil {
@@ -49,6 +59,31 @@ func (s *InterviewService) Start(candidateID, assessmentID uint) (*dto.StartResp
 	}
 	log.Printf("interview started: session=%d candidate=%d", sess.ID, candidateID)
 	return &dto.StartResponse{SessionID: sess.ID, ExpiresAt: sess.ExpiresAt, Question: *first}, nil
+}
+
+// resumeActive returns the candidate's unfinished attempt for this assessment, if there is one.
+// An attempt whose time ran out is closed instead, which frees the way for a new one.
+func (s *InterviewService) resumeActive(candidateID, assessmentID uint) (*dto.StartResponse, error) {
+	var open models.InterviewSession
+	err := s.db.Where("candidate_id = ? AND assessment_id = ? AND status = ?",
+		candidateID, assessmentID, models.InProgress).First(&open).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	state, err := s.Get(candidateID, open.ID) // also closes the attempt if it expired
+	if err != nil {
+		return nil, err
+	}
+	if state.Status != string(models.InProgress) || state.Question == nil {
+		if err := s.closeIfOpen(candidateID, open.ID); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+	return &dto.StartResponse{SessionID: open.ID, ExpiresAt: state.ExpiresAt, Question: *state.Question, Resumed: true}, nil
 }
 
 // Get returns the session state so the UI can resume after a refresh. It also

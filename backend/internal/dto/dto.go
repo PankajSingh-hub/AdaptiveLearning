@@ -51,6 +51,7 @@ type StartResponse struct {
 	SessionID uint        `json:"sessionId"`
 	ExpiresAt time.Time   `json:"expiresAt"`
 	Question  QuestionDTO `json:"question"`
+	Resumed   bool        `json:"resumed"`
 }
 
 type AnswerRequest struct {

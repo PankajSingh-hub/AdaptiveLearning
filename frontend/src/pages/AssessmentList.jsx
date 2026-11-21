@@ -29,6 +29,7 @@ export default function AssessmentList() {
         navigate(`/coding/${res.sessionId}`);
       } else {
         const res = await startInterview(a.id);
+        if (res.resumed) toast.success("Resuming your unfinished attempt");
         navigate(`/interview/${res.sessionId}`);
       }
     } catch (e) {

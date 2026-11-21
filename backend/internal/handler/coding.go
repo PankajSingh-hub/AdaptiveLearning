@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -86,9 +87,14 @@ func (h *CodingHandler) judge(c *gin.Context, submit bool) {
 	}
 	var req dto.CodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Fail(c, http.StatusBadRequest, "language (cpp, java or python) and code are required")
-		return
-	}
+    var tooBig *http.MaxBytesError
+    if errors.As(err, &tooBig) {
+        utils.Fail(c, http.StatusRequestEntityTooLarge, "request is too large")
+        return
+    }
+    utils.Fail(c, http.StatusBadRequest, "language (cpp, java or python) and code are required")
+    return
+}
 	var res *dto.CodingResult
 	var err error
 	if submit {

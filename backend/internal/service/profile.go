@@ -28,7 +28,7 @@ func (s *ProfileService) Get(userID uint, tz string) (*dto.ProfileDTO, error) {
 	}
 	out := &dto.ProfileDTO{
 		ID: u.ID, Name: u.Name, Email: u.Email, Role: string(u.Role), JoinedAt: u.CreatedAt,
-		EmailVerified: u.EmailVerifiedAt != nil, IsDemo: u.Email == DemoEmail,
+				EmailVerified: u.EmailVerifiedAt != nil, IsDemo: u.IsDemo,
 	}
 	if err := s.db.Model(&models.InterviewReport{}).Where("candidate_id = ?", userID).
 		Count(&out.InterviewsCompleted).Error; err != nil {
@@ -58,7 +58,7 @@ func (s *ProfileService) UpdateName(userID uint, name string) (*dto.UserDTO, err
 	if err := s.db.First(&u, userID).Error; err != nil {
 		return nil, NotFound("user not found")
 	}
-	if u.Email == DemoEmail {
+		if u.IsDemo {
 		return nil, Forbidden("the shared demo account cannot be changed")
 	}
 	name = strings.TrimSpace(name)
@@ -77,7 +77,7 @@ func (s *ProfileService) ChangePassword(userID uint, req dto.ChangePasswordReque
 	if err := s.db.First(&u, userID).Error; err != nil {
 		return NotFound("user not found")
 	}
-	if u.Email == DemoEmail {
+		if u.IsDemo {
 		return Forbidden("the shared demo account's password cannot be changed")
 	}
 	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.CurrentPassword)) != nil {

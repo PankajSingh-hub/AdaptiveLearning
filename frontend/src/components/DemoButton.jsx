@@ -38,8 +38,8 @@ export default function DemoButton({ onError }) {
         {busy ? "Opening demo..." : "Continue as demo candidate"}
       </button>
       <p className="muted small" style={{ marginTop: 8, textAlign: "center" }}>
-        No email needed. The demo account is shared, so its results are visible
-        to other demo visitors.
+        No email needed. Every demo visit starts with a fresh, empty account
+        that is deleted after 24 hours.
       </p>
     </>
   );

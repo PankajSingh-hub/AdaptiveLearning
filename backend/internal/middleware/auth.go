@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -18,15 +20,21 @@ func Auth(auth *service.AuthService) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		claims, err := auth.ParseToken(strings.TrimPrefix(header, "Bearer "))
+		claims, err := auth.Authenticate(strings.TrimPrefix(header, "Bearer "))
 		if err != nil {
-			utils.Fail(c, http.StatusUnauthorized, "invalid or expired token")
+			var ae *service.AppError
+			if errors.As(err, &ae) {
+				utils.Fail(c, ae.Status, ae.Message)
+			} else {
+				log.Printf("auth lookup failed: %v", err)
+				utils.Fail(c, http.StatusInternalServerError, "something went wrong, please try again")
+			}
 			c.Abort()
 			return
 		}
 		c.Set("userID", claims.UserID)
-		c.Set("role", claims.Role)
-		c.Next()
+	c.Set("role", claims.Role)
+	c.Next()
 	}
 }
 

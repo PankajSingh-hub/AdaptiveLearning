@@ -16,9 +16,7 @@ import (
 func Seed(db *gorm.DB) {
 	seedAdmin(db)
 	// The demo candidate is only created when you opt in (local development).
-	if os.Getenv("DEMO_LOGIN") == "true" {
-		seedUser(db, "Demo Candidate", "candidate@example.com", randomPassword(), models.RoleCandidate)
-	}
+	
 	seedQuestions(db)
 	seedAssessments(db)
 	seedCodingAssessment(db)

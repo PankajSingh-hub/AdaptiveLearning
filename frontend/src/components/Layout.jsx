@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   LayoutDashboard,
@@ -27,7 +27,8 @@ const ADMIN_NAV = [
 ];
 
 export default function Layout() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const items = isAdmin ? ADMIN_NAV : CANDIDATE_NAV;
@@ -79,6 +80,20 @@ export default function Layout() {
           <span className="spacer" />
           <ProfileMenu />
         </header>
+        {user.isDemo && (
+          <div className="demo-strip">
+            Temporary demo account: nothing is saved after 24 hours.{" "}
+            <button
+              className="link-btn"
+              onClick={() => {
+                logout();
+                navigate("/register");
+              }}
+            >
+              Create a free account to keep your results
+            </button>
+          </div>
+        )}
         <main className="content" key={pathname}>
           <Outlet />
         </main>

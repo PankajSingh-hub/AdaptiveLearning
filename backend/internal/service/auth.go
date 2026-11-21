@@ -95,7 +95,23 @@ func (s *AuthService) ParseToken(tokenStr string) (*Claims, error) {
 	}
 	return claims, nil
 }
+// Authenticate: valid signature AND the user still exists. Role comes from the database.
+func (s *AuthService) Authenticate(tokenStr string) (*Claims, error) {
+	claims, err := s.ParseToken(tokenStr)
+	if err != nil {
+		return nil, err
+	}
+	var u models.User
+	if err := s.db.Select("id", "role").First(&u, claims.UserID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, Unauthorized("invalid or expired token")
+		}
+		return nil, err
+	}
+	claims.Role = string(u.Role)
+	return claims, nil
+}
 
 func toUserDTO(u models.User) *dto.UserDTO {
-	return &dto.UserDTO{ID: u.ID, Name: u.Name, Email: u.Email, Role: string(u.Role)}
+	return &dto.UserDTO{ID: u.ID, Name: u.Name, Email: u.Email, Role: string(u.Role), IsDemo: u.IsDemo}
 }

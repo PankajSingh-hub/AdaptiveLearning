@@ -1,18 +1,18 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   ClipboardList,
   LayoutDashboard,
   Library,
-  LogOut,
   Menu,
+  Settings,
   Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { APP_NAME } from "../utils/constants";
-import { Badge } from "./ui";
+import { APP_NAME, homeFor } from "../utils/constants";
+import ProfileMenu from "./ProfileMenu";
 
 const CANDIDATE_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -27,31 +27,31 @@ const ADMIN_NAV = [
 ];
 
 export default function Layout() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
   const { pathname } = useLocation();
-
   const items = isAdmin ? ADMIN_NAV : CANDIDATE_NAV;
-  const onLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
-  };
+  const close = () => setOpen(false);
 
   return (
     <div className="shell">
       <aside className={`sidebar ${open ? "open" : ""}`}>
-        <div className="brand">
-          <Sparkles size={22} color="#e8b86a" />
-          <span className="grad">{APP_NAME}</span>
-        </div>
+        {/* A plain link on purpose: clicking the logo does a full page reload. */}
+        <a
+          className="brand"
+          href={homeFor(user.role)}
+          aria-label={`${APP_NAME} home`}
+        >
+          <Sparkles size={22} color="var(--accent)" />
+          <span>{APP_NAME}</span>
+        </a>
         <nav className="nav">
           {items.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               end={to === "/admin" || to === "/dashboard"}
-              onClick={() => setOpen(false)}
+              onClick={close}
             >
               <Icon size={18} />
               {label}
@@ -59,19 +59,13 @@ export default function Layout() {
           ))}
         </nav>
         <div className="bottom nav">
-          <a
-            href="#logout"
-            onClick={(e) => {
-              e.preventDefault();
-              onLogout();
-            }}
-          >
-            <LogOut size={18} />
-            Log out
-          </a>
+          <NavLink to="/settings" onClick={close}>
+            <Settings size={18} />
+            Settings
+          </NavLink>
         </div>
       </aside>
-      {open && <div className="scrim" onClick={() => setOpen(false)} />}
+      {open && <div className="scrim" onClick={close} />}
 
       <div className="main">
         <header className="topbar">
@@ -83,11 +77,7 @@ export default function Layout() {
             <Menu size={20} />
           </button>
           <span className="spacer" />
-          <div className="user-chip">
-            <Badge tone="accent">{user.role}</Badge>
-            <span className="who">{user.name}</span>
-            <span className="avatar">{user.name?.[0]?.toUpperCase()}</span>
-          </div>
+          <ProfileMenu />
         </header>
         <main className="content" key={pathname}>
           <Outlet />

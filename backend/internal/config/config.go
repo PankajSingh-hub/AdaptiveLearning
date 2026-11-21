@@ -16,6 +16,7 @@ type Config struct {
 	JWTExpiryHrs  int
 	AllowedOrigin string
 	RunMigrations bool
+	DemoLogin bool
 }
 
 func Load() *Config {
@@ -35,6 +36,7 @@ func Load() *Config {
 		JWTExpiryHrs:  hrs,
 		AllowedOrigin: get("ALLOWED_ORIGIN", "http://localhost:5173"),
 		RunMigrations: get("RUN_MIGRATIONS", "true") == "true",
+		DemoLogin:     get("DEMO_LOGIN", "false") == "true",
 	}
 }
 

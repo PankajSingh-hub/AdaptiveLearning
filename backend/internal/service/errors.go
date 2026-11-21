@@ -16,3 +16,6 @@ func Unauthorized(msg string) *AppError {
 	return &AppError{http.StatusUnauthorized, msg}
 }
 func Conflict(msg string) *AppError { return &AppError{http.StatusConflict, msg} }
+func TooMany(msg string) *AppError    { return &AppError{http.StatusTooManyRequests, msg} }
+func BadGateway(msg string) *AppError { return &AppError{http.StatusBadGateway, msg} }
+func Forbidden(msg string) *AppError { return &AppError{http.StatusForbidden, msg} }

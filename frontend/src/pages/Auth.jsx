@@ -2,16 +2,18 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
-import { register } from "../services/authService";
+import useFetch from "../hooks/useFetch";
+import { authConfig, login as loginRequest } from "../services/authService";
 import { errMsg } from "../services/api";
 import { APP_NAME, homeFor } from "../utils/constants";
+import DemoButton from "../components/DemoButton";
 
 export default function Auth({ mode }) {
-  const isRegister = mode === "register";
-  const isAdminLogin = mode === "admin";
-  const { user, login, logout } = useAuth();
+  const isAdmin = mode === "admin";
+  const { user, saveSession } = useAuth();
   const navigate = useNavigate();
-  const [f, setF] = useState({ name: "", email: "", password: "" });
+  const { data: cfg } = useFetch(() => authConfig(), []);
+  const [f, setF] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -21,23 +23,18 @@ export default function Auth({ mode }) {
   const submit = async (e) => {
     e.preventDefault();
     setError("");
-    if (isRegister && f.name.trim().length < 2)
-      return setError("Please enter your name");
     if (!/^\S+@\S+\.\S+$/.test(f.email))
       return setError("Enter a valid email address");
-    if (isRegister && f.password.length < 8)
-      return setError("Password must be at least 8 characters");
     if (!f.password) return setError("Enter your password");
     setBusy(true);
     try {
-      if (isRegister) await register(f.name.trim(), f.email.trim(), f.password);
-      const u = await login(f.email.trim(), f.password);
-      if (isAdminLogin && u.role !== "ADMIN") {
-        logout();
+      const res = await loginRequest(f.email.trim(), f.password);
+      if (isAdmin && res.user.role !== "ADMIN") {
         setError("This account does not have admin access");
         return;
       }
-      navigate(homeFor(u.role), { replace: true });
+      saveSession(res);
+      navigate(homeFor(res.user.role), { replace: true });
     } catch (err) {
       setError(errMsg(err));
     } finally {
@@ -49,31 +46,16 @@ export default function Auth({ mode }) {
     <div className="auth">
       <form className="card" onSubmit={submit}>
         <div className="brand" style={{ paddingLeft: 0 }}>
-          <Sparkles size={24} color="#e8b86a" />
+          <Sparkles size={24} color="var(--accent)" />
           <span className="grad">{APP_NAME}</span>
         </div>
         <h1 style={{ marginBottom: 4 }}>
-          {isRegister
-            ? "Create your account"
-            : isAdminLogin
-              ? "Admin sign in"
-              : "Welcome back"}
+          {isAdmin ? "Admin sign in" : "Welcome back"}
         </h1>
         <p className="muted" style={{ marginBottom: 24 }}>
           Adaptive technical assessments that match your level.
         </p>
 
-        {isRegister && (
-          <label className="field">
-            <span>Name</span>
-            <input
-              className="input"
-              value={f.name}
-              onChange={set("name")}
-              autoComplete="name"
-            />
-          </label>
-        )}
         <label className="field">
           <span>Email</span>
           <input
@@ -91,7 +73,7 @@ export default function Auth({ mode }) {
             type="password"
             value={f.password}
             onChange={set("password")}
-            autoComplete={isRegister ? "new-password" : "current-password"}
+            autoComplete="current-password"
           />
         </label>
 
@@ -101,40 +83,22 @@ export default function Auth({ mode }) {
           style={{ width: "100%" }}
           disabled={busy}
         >
-          {busy ? "Please wait..." : isRegister ? "Create account" : "Sign in"}
+          {busy ? "Please wait..." : "Sign in"}
         </button>
 
-        {!isAdminLogin && (
-          <p
-            className="muted small"
-            style={{ marginTop: 18, textAlign: "center" }}
-          >
-            {isRegister ? "Already have an account? " : "New here? "}
-            <Link to={isRegister ? "/login" : "/register"} className="grad">
-              {isRegister ? "Sign in" : "Create an account"}
-            </Link>
-          </p>
-        )}
-
-        {!isRegister && import.meta.env.DEV && (
-          <div
-            className="chips"
-            style={{ marginTop: 16, justifyContent: "center" }}
-          >
-            <button
-              type="button"
-              className="btn small"
-              onClick={() =>
-                setF({
-                  ...f,
-                  email: "candidate@example.com",
-                  password: "Candidate@123",
-                })
-              }
+        {!isAdmin && (
+          <>
+            <p
+              className="muted small"
+              style={{ marginTop: 18, textAlign: "center" }}
             >
-              Fill demo candidate
-            </button>
-          </div>
+              New here?{" "}
+              <Link to="/register" className="grad">
+                Create an account
+              </Link>
+            </p>
+            {cfg?.demoLogin && <DemoButton onError={setError} />}
+          </>
         )}
       </form>
     </div>

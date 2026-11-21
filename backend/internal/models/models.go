@@ -27,6 +27,7 @@ type User struct {
 	Role         Role
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	EmailVerifiedAt *time.Time
 }
 
 type Topic struct {

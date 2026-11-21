@@ -1,0 +1,13 @@
+CREATE TABLE email_verifications (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  code_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  attempts INT NOT NULL DEFAULT 0,
+  send_count INT NOT NULL DEFAULT 1,
+  last_sent_at DATETIME NOT NULL,
+  verified_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE users ADD COLUMN email_verified_at DATETIME NULL;

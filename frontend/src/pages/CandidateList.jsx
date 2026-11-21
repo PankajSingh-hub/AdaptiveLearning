@@ -90,7 +90,7 @@ export default function CandidateList() {
               position: "absolute",
               left: 12,
               top: 14,
-              color: "#8e9a90",
+              color: "var(--muted)",
             }}
           />
           <input

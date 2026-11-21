@@ -36,6 +36,12 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       CANDIDATE_PASSWORD: ${CANDIDATE_PASSWORD:-}
       CODING_EXECUTOR: "off"
+            DEMO_LOGIN: ${DEMO_LOGIN:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     ports:
       - "8080:8080"
 

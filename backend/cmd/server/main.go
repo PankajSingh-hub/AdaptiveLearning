@@ -16,6 +16,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"adaptive-assessment/internal/mailer"
+	_"time/tzdata"
 )
 
 func main() {
@@ -24,6 +26,11 @@ func main() {
 	database.Seed(db)
 
 	authSvc := service.NewAuthService(db, cfg.JWTSecret, cfg.JWTExpiryHrs)
+		mailSender, err := mailer.FromEnv()
+	if err != nil {
+		log.Fatalf("mail: %v", err)
+	}
+	signupSvc := service.NewSignupService(db, mailSender, cfg.JWTSecret, authSvc)
 	reportSvc := service.NewReportService(db)
 	interviewSvc := service.NewInterviewService(db, service.NewAdaptiveEngine(), reportSvc)
 	questionSvc := service.NewQuestionService(db)
@@ -31,8 +38,10 @@ func main() {
 	analyticsSvc := service.NewAnalyticsService(db, reportSvc)
 	candidateSvc := service.NewCandidateService(db, reportSvc)
 		codingSvc := service.NewCodingService(db, newExecutor())
+		profileSvc := service.NewProfileService(db)
 
 	authH := handler.NewAuthHandler(authSvc)
+	signupH := handler.NewSignupHandler(signupSvc, authSvc, cfg.DemoLogin, mailSender.Mode())
 	interviewH := handler.NewInterviewHandler(interviewSvc)
 	questionH := handler.NewQuestionHandler(questionSvc)
 	assessmentH := handler.NewAssessmentHandler(assessmentSvc)
@@ -40,6 +49,7 @@ func main() {
 	analyticsH := handler.NewAnalyticsHandler(analyticsSvc)
 	candidateH := handler.NewCandidateHandler(candidateSvc)
 codingH := handler.NewCodingHandler(codingSvc)
+profileH := handler.NewProfileHandler(profileSvc)
 		r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{cfg.AllowedOrigin},
@@ -52,12 +62,23 @@ codingH := handler.NewCodingHandler(codingSvc)
 	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
 
 	api := r.Group("/api")
-	api.POST("/auth/register", authH.Register)
 	limiter := middleware.NewLoginLimiter()
-api.POST("/auth/login", limiter.Guard(), authH.Login)
+	api.POST("/auth/login", limiter.Guard(), authH.Login)
+	ipLimit := middleware.NewIPLimiter(30, 15*time.Minute)
+	api.GET("/auth/config", signupH.Config)
+	api.POST("/auth/demo", signupH.Demo)
+	signup := api.Group("/auth/signup", ipLimit.Guard())
+	signup.POST("/start", signupH.Start)
+	signup.POST("/verify", signupH.Verify)
+	signup.POST("/complete", signupH.Complete)
 
 	protected := api.Group("", middleware.Auth(authSvc))
-	protected.GET("/auth/me", authH.Me)
+	protected.GET("/auth/me", authH.Me)	
+	pwLimit := middleware.NewIPLimiter(10, 15*time.Minute)
+	protected.GET("/me/profile", profileH.Get)
+	protected.PUT("/me/profile", profileH.Update)
+	protected.GET("/me/streak", profileH.Streak)
+	protected.POST("/me/password", pwLimit.Guard(), profileH.ChangePassword)
 
 	// Any logged-in user (handlers apply ownership rules)
 	protected.GET("/assessments", assessmentH.List)

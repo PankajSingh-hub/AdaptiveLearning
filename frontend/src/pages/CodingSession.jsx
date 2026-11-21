@@ -273,7 +273,7 @@ export default function CodingSession() {
 
       <div className="iv-top cs-top">
         <div className="brand" style={{ padding: 0 }}>
-          <Sparkles size={20} color="#e8b86a" />
+          <Sparkles size={20} color="var(--accent)" />
           <span className="grad">{APP_NAME}</span>
         </div>
         <div className="pchips">
@@ -347,7 +347,7 @@ export default function CodingSession() {
 
               <div className="card">
                 <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Lightbulb size={18} color="#e8c46e" /> Hints
+                  <Lightbulb size={18} color="var(--warn)" /> Hints
                   <span className="muted small" style={{ marginLeft: "auto" }}>
                     {problem.failures} of {problem.maxFailures} used
                   </span>
@@ -355,7 +355,7 @@ export default function CodingSession() {
                 {Array.from({ length: problem.maxFailures }, (_, i) =>
                   problem.hints[i] ? (
                     <div key={i} className="hint on">
-                      <Lightbulb size={16} color="#e8c46e" />
+                      <Lightbulb size={16} color="var(--warn)" />
                       <span>{problem.hints[i]}</span>
                     </div>
                   ) : (

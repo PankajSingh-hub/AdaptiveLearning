@@ -69,10 +69,12 @@ export default function AssessmentList() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
+                    alignItems: "center",
                     gap: 10,
+                    marginBottom: 14,
                   }}
                 >
-                  <h2>{a.title}</h2>
+                  <h2 style={{ margin: 0 }}>{a.title}</h2>
                   <Badge tone={coding ? "accent" : ""}>
                     {coding ? "Coding" : "Quiz"}
                   </Badge>

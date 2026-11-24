@@ -124,6 +124,22 @@ h3 {
 .aurora {
   display: none;
 }
+.demo-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin: 0 auto 18px;
+  padding: 9px 16px;
+  max-width: fit-content;
+  border-radius: 10px;
+  font-size: .85rem;
+  color: var(--warn);
+  background: rgba(var(--warn-rgb), .12);
+  border: 1px solid rgba(var(--warn-rgb), .3);
+}
 
 @keyframes fadeUp {
   from {
@@ -1183,10 +1199,7 @@ tbody tr:hover {
   width: 38%;
 }
 
-@media (max-width: 900px) {
-  .shell {
-    grid-template-columns: 1fr;
-  }
+
   .sidebar {
     position: fixed;
     z-index: 40;

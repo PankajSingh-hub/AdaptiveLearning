@@ -258,3 +258,6 @@
     max-width: 48vw;
   }
 }
+.cs-pane:last-child {
+  padding-bottom: 110px;
+}

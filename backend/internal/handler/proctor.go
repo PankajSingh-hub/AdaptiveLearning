@@ -16,7 +16,7 @@ func (h *InterviewHandler) Warn(c *gin.Context) {
 	}
 	var req dto.WarningRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Fail(c, http.StatusBadRequest, "type must be NO_PERSON or MULTIPLE_PEOPLE")
+		utils.Fail(c, http.StatusBadRequest, "type must be NO_PERSON or MULTIPLE_PEOPLE or TOO_NOISY")
 		return
 	}
 	res, err := h.svc.Warn(c.GetUint("userID"), id, req.Type)
@@ -34,7 +34,7 @@ func (h *CodingHandler) Warn(c *gin.Context) {
 	}
 	var req dto.WarningRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Fail(c, http.StatusBadRequest, "type must be NO_PERSON or MULTIPLE_PEOPLE")
+		utils.Fail(c, http.StatusBadRequest, "type must be NO_PERSON or MULTIPLE_PEOPLE or TOO_NOISY")
 		return
 	}
 	res, err := h.svc.Warn(c.GetUint("userID"), id, req.Type)

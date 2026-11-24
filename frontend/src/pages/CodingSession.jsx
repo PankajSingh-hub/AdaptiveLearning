@@ -269,6 +269,7 @@ export default function CodingSession() {
       <Proctor
         initialWarnings={session.warnings ?? 0}
         onViolation={onViolation}
+        compact
       />
 
       <div className="iv-top cs-top">

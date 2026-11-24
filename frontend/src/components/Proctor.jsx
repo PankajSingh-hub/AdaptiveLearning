@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, CameraOff } from "lucide-react";
+import { Camera, CameraOff, Mic, ShieldCheck, Volume2 } from "lucide-react";
 import { FilesetResolver, ObjectDetector } from "@mediapipe/tasks-vision";
 import { Spinner } from "./ui";
 import "../styles/proctor.css";
@@ -10,15 +10,20 @@ const MODEL =
   "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite";
 
 // Tunable rules
-const SAMPLE_MS = 500; // how often the frame is checked
-const BAD_SAMPLES = 4; // 4 x 500 ms = a problem must last 2 seconds in a row
-const COOLDOWN_MS = 5000; // grace period after a warning
+const SAMPLE_MS = 500; // how often the frame and the sound level are checked
+const BAD_SAMPLES = 4; // 4 x 500 ms = a camera problem must last 2 seconds in a row
+const LOUD_SAMPLES = 5; // 5 x 500 ms = loud sound must last 2.5 seconds in a row
+const CALIBRATE_SAMPLES = 2; // first second: measure the room's background level
+const LOUD_MARGIN = 0.07; // volume (RMS, 0..1) above the room's background that counts as loud
+const LOUD_FLOOR = 0.09; // never treat anything below this absolute volume as loud
+const COOLDOWN_MS = 5000; // grace period after any warning
 const ALERT_MS = 2000; // how long the red label stays on screen
 const MAX_WARNINGS = 3;
 
 const MESSAGES = {
   NO_PERSON: "No person detected in the camera frame",
   MULTIPLE_PEOPLE: "More than one person detected",
+  LOUD_VOICE: "Too much noise or talking detected",
 };
 
 async function createDetector() {
@@ -37,31 +42,54 @@ async function createDetector() {
   }
 }
 
-// Counts people in the webcam frame (body detection, no eye or gaze tracking).
+const rms = (buf) => {
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const v = (buf[i] - 128) / 128;
+    sum += v * v;
+  }
+  return Math.sqrt(sum / buf.length);
+};
+
+// Checks (1) exactly one person is in the camera frame (body detection, no eye or gaze tracking) and
+// (2) the room is not loud (microphone VOLUME only: nothing is recorded, stored, uploaded or transcribed).
 // onViolation(type) must report the warning to the backend and resolve to { warnings }.
-export default function Proctor({ initialWarnings = 0, onViolation }) {
+export default function Proctor({
+  initialWarnings = 0,
+  onViolation,
+  compact = false,
+}) {
   const video = useRef(null);
+  const [started, setStarted] = useState(false);
   const [status, setStatus] = useState("loading"); // loading | ready | denied | error
   const [attempt, setAttempt] = useState(0);
   const [people, setPeople] = useState(null);
+  const [micOn, setMicOn] = useState(false);
+  const [loud, setLoud] = useState(false);
   const [warnings, setWarnings] = useState(initialWarnings);
   const [alert, setAlert] = useState(null);
 
   const warnRef = useRef(initialWarnings);
   const violationRef = useRef(onViolation);
-
   useEffect(() => {
     violationRef.current = onViolation;
   });
   const alertTimer = useRef(null);
 
   useEffect(() => {
+    if (!started) return;
     let stopped = false;
     let stream = null;
     let detector = null;
+    let audioCtx = null;
+    let analyser = null;
     let timer = null;
     let bad = 0;
+    let loudRun = 0;
+    let calib = [];
+    let floor = LOUD_FLOOR;
     let quietUntil = 0;
+    const samples = new Uint8Array(1024);
 
     const raise = (type) => {
       warnRef.current += 1;
@@ -85,6 +113,26 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
     const tick = () => {
       const el = video.current;
       if (!el || !detector || el.readyState < 2) return;
+      const quiet = Date.now() < quietUntil;
+
+      // --- sound level ---
+      if (analyser) {
+        analyser.getByteTimeDomainData(samples);
+        const level = rms(samples);
+        if (calib.length < CALIBRATE_SAMPLES) {
+          calib.push(level);
+          if (calib.length === CALIBRATE_SAMPLES) {
+            const base = calib.reduce((a, b) => a + b, 0) / calib.length;
+            floor = Math.max(LOUD_FLOOR, base + LOUD_MARGIN);
+          }
+        } else {
+          const isLoud = level > floor;
+          setLoud(isLoud);
+          loudRun = isLoud && !quiet ? loudRun + 1 : 0;
+        }
+      }
+
+      // --- people in frame ---
       const track = stream?.getVideoTracks()[0];
       let n = 0;
       if (track && track.readyState === "live") {
@@ -95,15 +143,23 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
         }
       }
       setPeople(n);
-      if (Date.now() < quietUntil || n === 1) {
+
+      if (quiet) {
         bad = 0;
+        loudRun = 0;
         return;
       }
-      bad += 1;
+      bad = n === 1 ? 0 : bad + 1;
       if (bad >= BAD_SAMPLES) {
         bad = 0;
+        loudRun = 0;
         quietUntil = Date.now() + COOLDOWN_MS;
         raise(n === 0 ? "NO_PERSON" : "MULTIPLE_PEOPLE");
+      } else if (loudRun >= LOUD_SAMPLES) {
+        bad = 0;
+        loudRun = 0;
+        quietUntil = Date.now() + COOLDOWN_MS;
+        raise("LOUD_VOICE");
       }
     };
 
@@ -111,21 +167,50 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480, facingMode: "user" },
-          audio: false,
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          },
         });
       } catch {
-        if (!stopped) setStatus("denied");
-        return;
+        // Camera is required. Retry without audio so a missing microphone is not fatal.
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 640, height: 480, facingMode: "user" },
+            audio: false,
+          });
+        } catch {
+          if (!stopped) setStatus("denied");
+          return;
+        }
       }
       if (stopped) {
         stream.getTracks().forEach((t) => t.stop());
         return;
       }
+
+      if (stream.getAudioTracks().length > 0) {
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const src = audioCtx.createMediaStreamSource(
+            new MediaStream(stream.getAudioTracks()),
+          );
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 1024;
+          src.connect(analyser); // measured only: never connected to the speakers, never recorded
+          if (audioCtx.state === "suspended") await audioCtx.resume();
+          setMicOn(true);
+        } catch {
+          analyser = null;
+        }
+      }
+
       video.current.srcObject = stream;
       try {
         await video.current.play();
       } catch {
-        /* autoplay is allowed for muted video */
+        /* muted video may autoplay */
       }
       try {
         detector = await createDetector();
@@ -147,8 +232,14 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
       clearTimeout(alertTimer.current);
       stream?.getTracks().forEach((t) => t.stop());
       detector?.close();
+      audioCtx?.close().catch(() => {});
     };
-  }, [attempt]);
+  }, [started, attempt]);
+
+  const retry = () => {
+    setStatus("loading");
+    setAttempt((a) => a + 1);
+  };
 
   const ok = status === "ready" && people === 1;
   const bad = status === "ready" && people !== null && people !== 1;
@@ -160,14 +251,61 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
         : people === 1
           ? "1 person"
           : `${people} people`;
-  const retry = () => {
-    setStatus("loading");
-    setAttempt((a) => a + 1);
-  };
+
+  // ---- before-you-start screen ----
+  if (!started) {
+    return (
+      <div className="proctor-block">
+        <div className="card">
+          <ShieldCheck size={32} color="var(--accent)" />
+          <h2 style={{ marginTop: 10 }}>Before you start</h2>
+          <ul className="prep">
+            <li>
+              <Volume2 size={16} />
+              <span>
+                <strong>Find a quiet place.</strong> Loud noise or talking can
+                trigger a warning.
+              </span>
+            </li>
+            <li>
+              <Camera size={16} />
+              <span>
+                <strong>Stay in the frame.</strong> Exactly one person, your
+                face and shoulders visible, in good light.
+              </span>
+            </li>
+            <li>
+              <Mic size={16} />
+              <span>
+                <strong>Camera and microphone</strong> are used only to count
+                people and measure volume.
+              </span>
+            </li>
+          </ul>
+          <p className="muted small" style={{ marginBottom: 6 }}>
+            Nothing is recorded, stored or uploaded, and no speech is
+            recognised.
+          </p>
+          <p className="muted small" style={{ marginBottom: 16 }}>
+            3 warnings end the assessment. Your timer is already running.
+          </p>
+          <button
+            className="btn btn-primary"
+            style={{ width: "100%" }}
+            onClick={() => setStarted(true)}
+          >
+            I am ready, start
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className={`proctor-cam ${ok ? "ok" : bad ? "bad" : ""}`}>
+      <div
+        className={`proctor-cam ${compact ? "compact" : ""} ${ok && !loud ? "ok" : bad || loud ? "bad" : ""}`}
+      >
         <video ref={video} muted playsInline autoPlay />
         <div className="proctor-bar">
           <span
@@ -177,8 +315,19 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
           >
             {label}
           </span>
+          <span
+            style={{
+              color: loud ? "var(--bad)" : "var(--muted)",
+              display: "inline-flex",
+              gap: 4,
+              alignItems: "center",
+            }}
+          >
+            {micOn ? <Mic size={12} /> : null}
+            {micOn ? (loud ? "Loud" : "Quiet") : "No mic"}
+          </span>
           <span style={{ color: warnings > 0 ? "var(--bad)" : "var(--muted)" }}>
-            Warnings {Math.min(warnings, MAX_WARNINGS)}/{MAX_WARNINGS}
+            {Math.min(warnings, MAX_WARNINGS)}/{MAX_WARNINGS}
           </span>
         </div>
       </div>
@@ -203,10 +352,10 @@ export default function Proctor({ initialWarnings = 0, onViolation }) {
                 <div className="center" style={{ padding: 10 }}>
                   <Spinner />
                 </div>
-                <h2>Starting camera check</h2>
+                <h2>Starting camera and microphone check</h2>
                 <p className="muted small">
-                  Allow camera access when your browser asks. Video stays on
-                  your device and is never uploaded or recorded.
+                  Allow camera and microphone access when your browser asks.
+                  Nothing is recorded or uploaded.
                 </p>
               </>
             )}

@@ -80,21 +80,21 @@ export default function Layout() {
           <span className="spacer" />
           <ProfileMenu />
         </header>
-        {user.isDemo && (
-          <div className="demo-strip">
-            Temporary demo account: nothing is saved after 24 hours.{" "}
-            <button
-              className="link-btn"
-              onClick={() => {
-                logout();
-                navigate("/register");
-              }}
-            >
-              Create a free account to keep your results
-            </button>
-          </div>
-        )}
         <main className="content" key={pathname}>
+          {user.isDemo && (
+            <div className="demo-strip">
+              Temporary demo account: nothing is saved after 24 hours.{" "}
+              <button
+                className="link-btn"
+                onClick={() => {
+                  logout();
+                  navigate("/register");
+                }}
+              >
+                Create a free account to keep your results
+              </button>
+            </div>
+          )}
           <Outlet />
         </main>
       </div>

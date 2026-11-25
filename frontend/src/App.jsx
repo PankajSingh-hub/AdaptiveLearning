@@ -30,7 +30,7 @@ const only = (role, el) => <ProtectedRoute role={role}>{el}</ProtectedRoute>;
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <AuthProvider>
           <ToastProvider>
             <Routes>

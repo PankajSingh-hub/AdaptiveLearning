@@ -1199,7 +1199,10 @@ tbody tr:hover {
   width: 38%;
 }
 
-
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
   .sidebar {
     position: fixed;
     z-index: 40;
@@ -1226,6 +1229,7 @@ tbody tr:hover {
     padding-right: 16px;
   }
 }
+
 @media (max-width: 760px) {
   .settings {
     grid-template-columns: 1fr;

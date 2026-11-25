@@ -104,7 +104,7 @@ type CodingSkipResponse struct {
 	SessionDone bool `json:"sessionDone"`
 }
 type WarningRequest struct {
-	Type string `json:"type" binding:"required,oneof=NO_PERSON MULTIPLE_PEOPLE LOUD_VOICE"`
+		Type string `json:"type" binding:"required,oneof=NO_PERSON MULTIPLE_PEOPLE PHONE_DETECTED LOUD_VOICE"`
 }
 
 type WarningResponse struct {

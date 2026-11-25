@@ -24,6 +24,11 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if cfg.Production {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	executor := newExecutor(cfg.CodingExecutor)
+	codingEnabled := len(executor.Languages()) > 0
 	db := database.Connect(cfg)
 	database.Seed(db)
 
@@ -36,10 +41,10 @@ func main() {
 	reportSvc := service.NewReportService(db)
 	interviewSvc := service.NewInterviewService(db, service.NewAdaptiveEngine(), reportSvc)
 	questionSvc := service.NewQuestionService(db)
-	assessmentSvc := service.NewAssessmentService(db)
+	assessmentSvc := service.NewAssessmentService(db, codingEnabled)
 	analyticsSvc := service.NewAnalyticsService(db, reportSvc)
 	candidateSvc := service.NewCandidateService(db, reportSvc)
-		codingSvc := service.NewCodingService(db, newExecutor())
+		codingSvc := service.NewCodingService(db, executor)
 		profileSvc := service.NewProfileService(db)
 
 	authH := handler.NewAuthHandler(authSvc)
@@ -132,11 +137,9 @@ cod.POST("/sessions/:id/warning", codingH.Warn)
 log.Fatal(srv.ListenAndServe())
 }
 // CODING_EXECUTOR: "docker" (isolated containers), "local" (NO sandbox, demo only), "off" (disabled).
-func newExecutor() coding.Executor {
-	switch os.Getenv("CODING_EXECUTOR") {
-	case "off":
-		log.Println("coding: code execution is OFF")
-		return coding.OffExecutor{}
+// CODING_EXECUTOR: "docker" (isolated containers), "local" (NO sandbox, local demos only), anything else = off.
+func newExecutor(mode string) coding.Executor {
+	switch mode {
 	case "docker":
 		image := os.Getenv("JUDGE_IMAGE")
 		if image == "" {
@@ -147,8 +150,11 @@ func newExecutor() coding.Executor {
 			log.Fatalf("coding: %v", err)
 		}
 		return ex
-	default:
-		log.Println("coding: WARNING local executor has NO sandbox; use it for local demos only")
+	case "local":
+		log.Println("coding: WARNING local executor has NO sandbox; local demos only")
 		return coding.NewLocalExecutor(2)
+	default:
+		log.Println("coding: code execution is OFF (set CODING_EXECUTOR=docker to enable)")
+		return coding.OffExecutor{}
 	}
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   LayoutDashboard,
@@ -37,15 +37,15 @@ export default function Layout() {
   return (
     <div className="shell">
       <aside className={`sidebar ${open ? "open" : ""}`}>
-        {/* A plain link on purpose: clicking the logo does a full page reload. */}
-        <a
+        <Link
           className="brand"
-          href={homeFor(user.role)}
+          to={homeFor(user.role)}
+          onClick={close}
           aria-label={`${APP_NAME} home`}
         >
           <Sparkles size={22} color="var(--accent)" />
           <span>{APP_NAME}</span>
-        </a>
+        </Link>
         <nav className="nav">
           {items.map(({ to, label, icon: Icon }) => (
             <NavLink

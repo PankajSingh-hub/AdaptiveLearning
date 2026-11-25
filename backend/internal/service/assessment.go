@@ -7,18 +7,29 @@ import (
 	"gorm.io/gorm"
 )
 
-type AssessmentService struct{ db *gorm.DB }
+type AssessmentService struct {
+	db            *gorm.DB
+	codingEnabled bool
+}
+func NewAssessmentService(db *gorm.DB, codingEnabled bool) *AssessmentService {
+	return &AssessmentService{db: db, codingEnabled: codingEnabled}
+}
+func (s *AssessmentService) visible(adminView bool) *gorm.DB {
+	q := s.db
+	if !adminView {
+		q = q.Where("active = ?", true)
+		if !s.codingEnabled {
+			q = q.Where("assessment_type <> ?", "CODING")
+		}
+	}
+	return q
+}
 
-func NewAssessmentService(db *gorm.DB) *AssessmentService { return &AssessmentService{db: db} }
 
 // Candidates only see active assessments; admins see everything.
 func (s *AssessmentService) List(adminView bool) ([]dto.AssessmentDTO, error) {
-	q := s.db.Order("id DESC")
-	if !adminView {
-		q = q.Where("active = ?", true)
-	}
 	var rows []models.Assessment
-	if err := q.Find(&rows).Error; err != nil {
+	if err := s.visible(adminView).Order("id DESC").Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	out := make([]dto.AssessmentDTO, 0, len(rows))
@@ -29,12 +40,8 @@ func (s *AssessmentService) List(adminView bool) ([]dto.AssessmentDTO, error) {
 }
 
 func (s *AssessmentService) Get(id uint, adminView bool) (*dto.AssessmentDTO, error) {
-	q := s.db
-	if !adminView {
-		q = q.Where("active = ?", true)
-	}
 	var a models.Assessment
-	if err := q.First(&a, id).Error; err != nil {
+	if err := s.visible(adminView).First(&a, id).Error; err != nil {
 		return nil, NotFound("assessment not found")
 	}
 	d := toAssessmentDTO(a)
